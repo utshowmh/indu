@@ -1,0 +1,9 @@
+// Everything Indu can lex.
+
+fun main() {
+    var indu = {
+        type = "interpreted",
+        started_at = 2023,
+    };
+    print(indu.type);
+}
