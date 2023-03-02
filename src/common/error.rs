@@ -1,19 +1,19 @@
 use super::position::Position;
 
 #[derive(Debug)]
-pub enum ErrorKind {
+pub(crate) enum ErrorKind {
     LexerError,
 }
 
 #[derive(Debug)]
-pub struct Error {
-    pub kind: ErrorKind,
-    pub message: String,
-    pub position: Position,
+pub(crate) struct Error {
+    pub(crate) kind: ErrorKind,
+    pub(crate) message: String,
+    pub(crate) position: Position,
 }
 
 impl Error {
-    pub fn new(kind: ErrorKind, message: String, position: Position) -> Self {
+    pub(crate) fn new(kind: ErrorKind, message: String, position: Position) -> Self {
         Self {
             kind,
             message,
@@ -21,8 +21,11 @@ impl Error {
         }
     }
 
-    pub fn report(&self, source: &str) {
-        eprintln!("ERROR: {} in line {}.\n", self.message, self.position.line);
+    pub(crate) fn report(&self, source: &str) {
+        eprintln!(
+            "{:?}: {} in line {}.\n",
+            self.kind, self.message, self.position.line
+        );
         let source_chars: Vec<char> = source.chars().collect();
         let invalid_lexeme: String = source_chars[self.position.start..self.position.end]
             .iter()

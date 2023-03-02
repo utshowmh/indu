@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub enum Object {
+pub(crate) enum Object {
     Number(f64),
     String(String),
     Boolean(bool),

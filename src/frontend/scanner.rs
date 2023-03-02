@@ -7,7 +7,7 @@ use crate::common::{
     token::{Token, TokenKind},
 };
 
-pub struct Scanner {
+pub(crate) struct Scanner {
     source: Vec<char>,
 
     start_position: usize,
@@ -18,7 +18,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(source: &str) -> Self {
+    pub(crate) fn new(source: &str) -> Self {
         Self {
             source: source.chars().collect(),
 
@@ -30,7 +30,7 @@ impl Scanner {
         }
     }
 
-    pub fn scan(&mut self) -> Result<Vec<Token>, Error> {
+    pub(crate) fn scan(&mut self) -> Result<Vec<Token>, Error> {
         self.init_keywords();
 
         let mut tokens = Vec::new();

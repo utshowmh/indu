@@ -1,7 +1,7 @@
 use super::{object::Object, position::Position};
 
 #[derive(Debug, Clone)]
-pub enum TokenKind {
+pub(crate) enum TokenKind {
     Identifier,
     Number,
     String,
@@ -49,15 +49,15 @@ pub enum TokenKind {
 }
 
 #[derive(Debug)]
-pub struct Token {
-    pub kind: TokenKind,
-    pub lexeme: String,
-    pub literal: Option<Object>,
-    pub position: Position,
+pub(crate) struct Token {
+    pub(crate) kind: TokenKind,
+    pub(crate) lexeme: String,
+    pub(crate) literal: Option<Object>,
+    pub(crate) position: Position,
 }
 
 impl Token {
-    pub fn new(
+    pub(crate) fn new(
         kind: TokenKind,
         lexeme: String,
         literal: Option<Object>,
