@@ -1,6 +1,6 @@
 use super::{object::Object, position::Position};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum TokenKind {
     Identifier,
     Number,
@@ -48,7 +48,7 @@ pub(crate) enum TokenKind {
     EOF,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Token {
     pub(crate) kind: TokenKind,
     pub(crate) lexeme: String,

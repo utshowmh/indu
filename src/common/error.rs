@@ -3,6 +3,7 @@ use super::position::Position;
 #[derive(Debug)]
 pub(crate) enum ErrorKind {
     LexerError,
+    ParserError,
 }
 
 #[derive(Debug)]

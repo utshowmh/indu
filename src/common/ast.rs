@@ -55,11 +55,11 @@ impl ParenthesizedExpression {
 
 #[derive(Debug)]
 pub(crate) struct LiteralExpression {
-    pub(crate) value: Object,
+    pub(crate) value: Option<Object>,
 }
 
 impl LiteralExpression {
-    pub(crate) fn new(value: Object) -> Self {
+    pub(crate) fn new(value: Option<Object>) -> Self {
         Self { value }
     }
 }

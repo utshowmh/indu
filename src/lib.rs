@@ -8,7 +8,7 @@ use std::{
     process::exit,
 };
 
-use crate::frontend::scanner::Scanner;
+use crate::frontend::{parser::Parser, scanner::Scanner};
 
 pub fn run() {
     let args: Vec<String> = args().collect();
@@ -27,12 +27,20 @@ pub fn run() {
 fn run_file(source_path: &str) {
     let source =
         read_to_string(source_path).expect(&format!("ERROR: Could not read file {}.", source_path));
+
     let mut scanner = Scanner::new(&source);
     let tokens = scanner.scan().unwrap_or_else(|error| {
         error.report(&source);
         exit(65);
     });
-    println!("{:#?}", tokens);
+
+    let mut parser = Parser::new(tokens);
+    let expression = parser.parse().unwrap_or_else(|error| {
+        error.report(&source);
+        exit(65);
+    });
+
+    println!("{:#?}", expression);
 }
 
 fn run_repl() {
@@ -45,11 +53,19 @@ fn run_repl() {
         stdin()
             .read_line(&mut line)
             .expect("ERROR: Could not read line from stdin.");
+
         let mut scanner = Scanner::new(line.trim());
         let tokens = scanner.scan().unwrap_or_else(|error| {
             error.report(&line);
             Vec::new()
         });
-        println!("{:#?}", tokens);
+
+        let mut parser = Parser::new(tokens);
+        let expression = parser.parse().unwrap_or_else(|error| {
+            error.report(&line);
+            exit(65);
+        });
+
+        println!("{:#?}", expression);
     }
 }
