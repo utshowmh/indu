@@ -4,6 +4,7 @@ use super::position::Position;
 pub(crate) enum ErrorKind {
     LexerError,
     ParserError,
+    RuntimeError,
 }
 
 #[derive(Debug)]
@@ -22,16 +23,10 @@ impl Error {
         }
     }
 
-    pub(crate) fn report(&self, source: &str) {
+    pub(crate) fn report(&self) {
         eprintln!(
-            "{:?}: {} in line {}.\n",
-            self.kind, self.message, self.position.line
+            "{:?}: {} in line {}:{}.\n",
+            self.kind, self.message, self.position.line, self.position.end
         );
-        let source_chars: Vec<char> = source.chars().collect();
-        let invalid_lexeme: String = source_chars[self.position.start..self.position.end]
-            .iter()
-            .collect();
-        eprint!("\t{}", invalid_lexeme);
-        eprintln!(" <--- here\n");
     }
 }

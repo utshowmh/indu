@@ -4,7 +4,7 @@ use super::{object::Object, token::Token};
 pub(crate) enum Expression {
     Binary(BinaryExpression),
     Unary(UnaryExpression),
-    Parenthesized(ParenthesizedExpression),
+    Group(GroupExpression),
     Literal(LiteralExpression),
 }
 
@@ -41,11 +41,11 @@ impl UnaryExpression {
 }
 
 #[derive(Debug)]
-pub(crate) struct ParenthesizedExpression {
+pub(crate) struct GroupExpression {
     pub(crate) child: Box<Expression>,
 }
 
-impl ParenthesizedExpression {
+impl GroupExpression {
     pub(crate) fn new(child: Expression) -> Self {
         Self {
             child: Box::new(child),

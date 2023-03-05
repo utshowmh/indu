@@ -1,5 +1,6 @@
 mod common;
 mod frontend;
+mod runtime;
 
 use std::{
     env::args,
@@ -8,7 +9,10 @@ use std::{
     process::exit,
 };
 
-use crate::frontend::{parser::Parser, scanner::Scanner};
+use crate::{
+    frontend::{parser::Parser, scanner::Scanner},
+    runtime::interpreter::Interpreter,
+};
 
 pub fn run() {
     let args: Vec<String> = args().collect();
@@ -30,21 +34,27 @@ fn run_file(source_path: &str) {
 
     let mut scanner = Scanner::new(&source);
     let tokens = scanner.scan().unwrap_or_else(|error| {
-        error.report(&source);
+        error.report();
         exit(65);
     });
 
     let mut parser = Parser::new(tokens);
     let expression = parser.parse().unwrap_or_else(|error| {
-        error.report(&source);
+        error.report();
         exit(65);
     });
 
-    println!("{:#?}", expression);
+    let interpreter = Interpreter::new();
+    let object = interpreter.run(expression).unwrap_or_else(|error| {
+        error.report();
+        exit(65);
+    });
+
+    println!("{:#?}", object);
 }
 
 fn run_repl() {
-    println!("Indu REPL. Press [Ctrl] + [c] to exit.\n");
+    println!("Indu REPL. Press Ctrl-C to exit.\n");
 
     loop {
         print!("indu :> ");
@@ -56,16 +66,22 @@ fn run_repl() {
 
         let mut scanner = Scanner::new(line.trim());
         let tokens = scanner.scan().unwrap_or_else(|error| {
-            error.report(&line);
+            error.report();
             Vec::new()
         });
 
         let mut parser = Parser::new(tokens);
         let expression = parser.parse().unwrap_or_else(|error| {
-            error.report(&line);
+            error.report();
             exit(65);
         });
 
-        println!("{:#?}", expression);
+        let interpreter = Interpreter::new();
+        let object = interpreter.run(expression).unwrap_or_else(|error| {
+            error.report();
+            exit(65);
+        });
+
+        println!("{:#?}", object);
     }
 }

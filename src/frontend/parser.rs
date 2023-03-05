@@ -1,7 +1,5 @@
 use crate::common::{
-    ast::{
-        BinaryExpression, Expression, LiteralExpression, ParenthesizedExpression, UnaryExpression,
-    },
+    ast::{BinaryExpression, Expression, GroupExpression, LiteralExpression, UnaryExpression},
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
 };
@@ -97,7 +95,6 @@ impl Parser {
             TokenKind::True,
             TokenKind::False,
             TokenKind::Nil,
-            TokenKind::Identifier,
         ]) {
             Ok(Expression::Literal(LiteralExpression::new(
                 self.next_token().literal,
@@ -106,9 +103,7 @@ impl Parser {
             self.advance_current_position();
             let child = self.parse_expression()?;
             self.consume_token(TokenKind::CloseParen)?;
-            Ok(Expression::Parenthesized(ParenthesizedExpression::new(
-                child,
-            )))
+            Ok(Expression::Group(GroupExpression::new(child)))
         } else {
             Err(self.generate_error(format!(
                 "Unexpected token `{:?}`",
