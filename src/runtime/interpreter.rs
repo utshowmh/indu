@@ -1,5 +1,8 @@
 use crate::common::{
-    ast::{BinaryExpression, Expression, GroupExpression, LiteralExpression, UnaryExpression},
+    ast::{
+        BinaryExpression, Expression, ExpressionStatement, GroupExpression, LiteralExpression,
+        PrintStatement, Statement, UnaryExpression,
+    },
     error::{Error, ErrorKind},
     object::Object,
     position::Position,
@@ -13,9 +16,32 @@ impl Interpreter {
         Self {}
     }
 
-    pub(crate) fn interpret(&self, expression: Expression) -> Result<(), Error> {
-        let value = self.evaluate_expression(expression)?;
+    pub(crate) fn interpret(&self, statements: Vec<Statement>) -> Result<(), Error> {
+        for statement in statements {
+            self.execute_statement(statement)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Interpreter {
+    fn execute_statement(&self, statement: Statement) -> Result<(), Error> {
+        match statement {
+            Statement::Print(statement) => self.execute_print_statement(statement),
+            Statement::Expression(statement) => self.execute_expression_statement(statement),
+        }
+    }
+
+    fn execute_print_statement(&self, statement: PrintStatement) -> Result<(), Error> {
+        let value = self.evaluate_expression(statement.expression)?;
         println!("{}", value);
+
+        Ok(())
+    }
+
+    fn execute_expression_statement(&self, statement: ExpressionStatement) -> Result<(), Error> {
+        self.evaluate_expression(statement.expression)?;
 
         Ok(())
     }

@@ -1,6 +1,34 @@
 use super::{object::Object, token::Token};
 
 #[derive(Debug)]
+pub(crate) enum Statement {
+    Print(PrintStatement),
+    Expression(ExpressionStatement),
+}
+
+#[derive(Debug)]
+pub(crate) struct PrintStatement {
+    pub(crate) expression: Expression,
+}
+
+impl PrintStatement {
+    pub(crate) fn new(expression: Expression) -> Self {
+        Self { expression }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct ExpressionStatement {
+    pub(crate) expression: Expression,
+}
+
+impl ExpressionStatement {
+    pub(crate) fn new(expression: Expression) -> Self {
+        Self { expression }
+    }
+}
+
+#[derive(Debug)]
 pub(crate) enum Expression {
     Binary(BinaryExpression),
     Unary(UnaryExpression),

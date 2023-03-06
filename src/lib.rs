@@ -71,7 +71,7 @@ fn run_repl() {
         let mut parser = Parser::new(tokens);
         let expression = parser.parse().unwrap_or_else(|error| {
             error.report();
-            exit(65);
+            Vec::new()
         });
 
         let interpreter = Interpreter::new();

@@ -1,5 +1,8 @@
 use crate::common::{
-    ast::{BinaryExpression, Expression, GroupExpression, LiteralExpression, UnaryExpression},
+    ast::{
+        BinaryExpression, Expression, ExpressionStatement, GroupExpression, LiteralExpression,
+        PrintStatement, Statement, UnaryExpression,
+    },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
 };
@@ -17,8 +20,34 @@ impl Parser {
         }
     }
 
-    pub(crate) fn parse(&mut self) -> Result<Expression, Error> {
-        self.parse_expression()
+    pub(crate) fn parse(&mut self) -> Result<Vec<Statement>, Error> {
+        let mut statements = Vec::new();
+
+        while !self.current_token_is_eof() {
+            statements.push(self.parse_statement()?);
+        }
+
+        Ok(statements)
+    }
+
+    fn parse_statement(&mut self) -> Result<Statement, Error> {
+        match self.current_token().kind {
+            TokenKind::Print => self.parse_print_statement(),
+            _ => self.parse_expression_statement(),
+        }
+    }
+
+    fn parse_print_statement(&mut self) -> Result<Statement, Error> {
+        self.advance_current_position();
+        let expression = self.parse_expression()?;
+        self.consume_token(TokenKind::Semicolon)?;
+        Ok(Statement::Print(PrintStatement::new(expression)))
+    }
+
+    fn parse_expression_statement(&mut self) -> Result<Statement, Error> {
+        let expression = self.parse_expression()?;
+        self.consume_token(TokenKind::Semicolon)?;
+        Ok(Statement::Expression(ExpressionStatement::new(expression)))
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
@@ -134,9 +163,9 @@ impl Parser {
         }
     }
 
-    // fn current_token_is_eof(&self) -> bool {
-    //     self.current_token().kind == TokenKind::EOF
-    // }
+    fn current_token_is_eof(&self) -> bool {
+        self.current_token().kind == TokenKind::EOF
+    }
 
     fn current_token(&self) -> Token {
         self.tokens[self.current_position].clone()
