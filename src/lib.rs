@@ -54,7 +54,7 @@ fn run_file(source_path: &str) {
 }
 
 fn run_repl() {
-    println!("Indu REPL. Press Ctrl-C to exit.\n");
+    println!("Welcome to Indu REPL. Press Ctrl-C to exit.\n");
 
     loop {
         print!("indu :> ");

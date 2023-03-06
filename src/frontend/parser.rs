@@ -26,7 +26,29 @@ impl Parser {
     }
 
     fn parse_binary_expression(&mut self) -> Result<Expression, Error> {
-        self.parse_equality_expression()
+        self.parse_logical_or_expression()
+    }
+
+    fn parse_logical_or_expression(&mut self) -> Result<Expression, Error> {
+        let mut left = self.parse_logical_and_expression()?;
+        while self.current_token_matches(&[TokenKind::Or]) {
+            let operator = self.next_token();
+            let right = self.parse_logical_and_expression()?;
+            left = Expression::Binary(BinaryExpression::new(left, operator, right));
+        }
+
+        Ok(left)
+    }
+
+    fn parse_logical_and_expression(&mut self) -> Result<Expression, Error> {
+        let mut left = self.parse_equality_expression()?;
+        while self.current_token_matches(&[TokenKind::And]) {
+            let operator = self.next_token();
+            let right = self.parse_equality_expression()?;
+            left = Expression::Binary(BinaryExpression::new(left, operator, right));
+        }
+
+        Ok(left)
     }
 
     fn parse_equality_expression(&mut self) -> Result<Expression, Error> {
@@ -106,8 +128,8 @@ impl Parser {
             Ok(Expression::Group(GroupExpression::new(child)))
         } else {
             Err(self.generate_error(format!(
-                "Unexpected token `{:?}`",
-                self.current_token().kind
+                "Unexpected token `{}`",
+                self.current_token().lexeme
             )))
         }
     }
@@ -139,8 +161,8 @@ impl Parser {
             Ok(self.next_token())
         } else {
             Err(self.generate_error(format!(
-                "Unexpected token`{:?}`, expected `{:?}`",
-                self.current_token().kind,
+                "Unexpected token`{}`, expected `{}`",
+                self.current_token().lexeme,
                 kind
             )))
         }

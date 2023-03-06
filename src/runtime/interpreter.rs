@@ -37,127 +37,131 @@ impl Interpreter {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Number(left_value + right_value))
                 }
-                (_, _) => self.generate_invalid_binary_operation_error(
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                ),
+                )),
             },
 
             TokenKind::Minus => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Number(left_value - right_value))
                 }
-                (_, _) => self.generate_invalid_binary_operation_error(
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                ),
+                )),
             },
 
             TokenKind::Star => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Number(left_value * right_value))
                 }
-                (_, _) => self.generate_invalid_binary_operation_error(
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                ),
+                )),
             },
 
             TokenKind::Slash => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Number(left_value / right_value))
                 }
-                (_, _) => self.generate_invalid_binary_operation_error(
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                ),
+                )),
             },
 
-            TokenKind::Equal => match (&left_value, &right_value) {
-                (Object::Boolean(left_value), Object::Boolean(right_value)) => {
-                    Ok(Object::Boolean(left_value == right_value))
-                }
-                (_, _) => self.generate_invalid_binary_operation_error(
-                    &expression.operator.lexeme,
-                    left_value,
-                    right_value,
-                    expression.operator.position,
-                ),
-            },
+            TokenKind::Equal => Ok(Object::Boolean(left_value == right_value)),
 
-            TokenKind::NotEqual => match (&left_value, &right_value) {
-                (Object::Boolean(left_value), Object::Boolean(right_value)) => {
-                    Ok(Object::Boolean(left_value != right_value))
-                }
-                (_, _) => self.generate_invalid_binary_operation_error(
-                    &expression.operator.lexeme,
-                    left_value,
-                    right_value,
-                    expression.operator.position,
-                ),
-            },
+            TokenKind::NotEqual => Ok(Object::Boolean(left_value != right_value)),
 
             TokenKind::Greater => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Boolean(left_value > right_value))
                 }
-                (_, _) => self.generate_invalid_binary_operation_error(
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                ),
+                )),
             },
 
             TokenKind::GreaterEqual => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Boolean(left_value >= right_value))
                 }
-                (_, _) => self.generate_invalid_binary_operation_error(
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                ),
+                )),
             },
 
             TokenKind::Lesser => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Boolean(left_value < right_value))
                 }
-                (_, _) => self.generate_invalid_binary_operation_error(
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                ),
+                )),
             },
 
             TokenKind::LesserEqual => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Boolean(left_value <= right_value))
                 }
-                (_, _) => self.generate_invalid_binary_operation_error(
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                ),
+                )),
             },
 
-            _ => self.generate_unexpected_operator_error(
+            TokenKind::And => match (&left_value, &right_value) {
+                (Object::Boolean(left_value), Object::Boolean(right_value)) => {
+                    Ok(Object::Boolean(left_value.clone() && right_value.clone()))
+                }
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                    &expression.operator.lexeme,
+                    left_value,
+                    right_value,
+                    expression.operator.position,
+                )),
+            },
+
+            TokenKind::Or => match (&left_value, &right_value) {
+                (Object::Boolean(left_value), Object::Boolean(right_value)) => {
+                    Ok(Object::Boolean(left_value.clone() || right_value.clone()))
+                }
+                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                    &expression.operator.lexeme,
+                    left_value,
+                    right_value,
+                    expression.operator.position,
+                )),
+            },
+
+            _ => Err(self.generate_unexpected_operator_error(
                 &expression.operator.lexeme,
                 "binary",
                 expression.operator.position,
-            ),
+            )),
         }
     }
 
@@ -183,11 +187,11 @@ impl Interpreter {
                 ),
             },
 
-            _ => self.generate_unexpected_operator_error(
+            _ => Err(self.generate_unexpected_operator_error(
                 &expression.operator.lexeme,
                 "unary",
                 expression.operator.position,
-            ),
+            )),
         }
     }
 
@@ -226,14 +230,14 @@ impl Interpreter {
         left_value: Object,
         right_value: Object,
         operator_position: Position,
-    ) -> Result<Object, Error> {
-        Err(self.generate_error(
+    ) -> Error {
+        self.generate_error(
             format!(
                 "Invalid binary operation. `{}` is not defined for `{}` and `{}`",
                 operator_lexeme, left_value, right_value
             ),
             operator_position,
-        ))
+        )
     }
 
     fn generate_unexpected_operator_error(
@@ -241,14 +245,14 @@ impl Interpreter {
         operator_lexeme: &str,
         current_operation: &str,
         operator_position: Position,
-    ) -> Result<Object, Error> {
-        Err(self.generate_error(
+    ) -> Error {
+        self.generate_error(
             format!(
                 "Unexpexted operator. `{}` is not as {} operator",
                 operator_lexeme, current_operation,
             ),
             operator_position,
-        ))
+        )
     }
 
     fn generate_error(&self, message: String, position: Position) -> Error {
