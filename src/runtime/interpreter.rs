@@ -13,8 +13,11 @@ impl Interpreter {
         Self {}
     }
 
-    pub(crate) fn run(&self, expression: Expression) -> Result<Object, Error> {
-        self.evaluate_expression(expression)
+    pub(crate) fn interpret(&self, expression: Expression) -> Result<(), Error> {
+        let value = self.evaluate_expression(expression)?;
+        println!("{}", value);
+
+        Ok(())
     }
 }
 
@@ -36,6 +39,9 @@ impl Interpreter {
             TokenKind::Plus => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Number(left_value + right_value))
+                }
+                (Object::String(left_value), Object::String(right_value)) => {
+                    Ok(Object::String(format!("{}{}", left_value, right_value)))
                 }
                 (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,

@@ -45,12 +45,10 @@ fn run_file(source_path: &str) {
     });
 
     let interpreter = Interpreter::new();
-    let object = interpreter.run(expression).unwrap_or_else(|error| {
+    interpreter.interpret(expression).unwrap_or_else(|error| {
         error.report();
         exit(65);
     });
-
-    println!("{:#?}", object);
 }
 
 fn run_repl() {
@@ -77,11 +75,9 @@ fn run_repl() {
         });
 
         let interpreter = Interpreter::new();
-        let object = interpreter.run(expression).unwrap_or_else(|error| {
+        interpreter.interpret(expression).unwrap_or_else(|error| {
             error.report();
-            exit(65);
+            ()
         });
-
-        println!("{:#?}", object);
     }
 }
