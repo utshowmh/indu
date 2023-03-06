@@ -1,3 +1,2 @@
-// Everything Indu can run
-
-print "utsho";
+var name = "indu";
+print name;

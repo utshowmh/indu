@@ -44,7 +44,7 @@ fn run_file(source_path: &str) {
         exit(65);
     });
 
-    let interpreter = Interpreter::new();
+    let mut interpreter = Interpreter::new();
     interpreter.interpret(expression).unwrap_or_else(|error| {
         error.report();
         exit(65);
@@ -74,7 +74,7 @@ fn run_repl() {
             Vec::new()
         });
 
-        let interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new();
         interpreter.interpret(expression).unwrap_or_else(|error| {
             error.report();
             ()

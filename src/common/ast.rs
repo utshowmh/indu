@@ -2,8 +2,24 @@ use super::{object::Object, token::Token};
 
 #[derive(Debug)]
 pub(crate) enum Statement {
+    Variable(VariableStatement),
     Print(PrintStatement),
     Expression(ExpressionStatement),
+}
+
+#[derive(Debug)]
+pub(crate) struct VariableStatement {
+    pub(crate) identifier: Token,
+    pub(crate) initializer: Option<Expression>,
+}
+
+impl VariableStatement {
+    pub(crate) fn new(identifier: Token, initializer: Option<Expression>) -> Self {
+        Self {
+            identifier,
+            initializer,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -34,6 +50,7 @@ pub(crate) enum Expression {
     Unary(UnaryExpression),
     Group(GroupExpression),
     Literal(LiteralExpression),
+    Variable(VariableExpression),
 }
 
 #[derive(Debug)]
@@ -89,5 +106,16 @@ pub(crate) struct LiteralExpression {
 impl LiteralExpression {
     pub(crate) fn new(value: Option<Object>) -> Self {
         Self { value }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct VariableExpression {
+    pub(crate) identifier: Token,
+}
+
+impl VariableExpression {
+    pub(crate) fn new(identifier: Token) -> Self {
+        Self { identifier }
     }
 }

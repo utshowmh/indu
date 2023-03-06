@@ -1,7 +1,7 @@
 use crate::common::{
     ast::{
         BinaryExpression, Expression, ExpressionStatement, GroupExpression, LiteralExpression,
-        PrintStatement, Statement, UnaryExpression,
+        PrintStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -32,9 +32,26 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
         match self.current_token().kind {
+            TokenKind::Var => self.parse_var_statement(),
             TokenKind::Print => self.parse_print_statement(),
             _ => self.parse_expression_statement(),
         }
+    }
+
+    fn parse_var_statement(&mut self) -> Result<Statement, Error> {
+        self.advance_current_position();
+        let identifier = self.consume_token(TokenKind::Identifier)?;
+        let mut initializer = None;
+        if self.current_token_matches(&[TokenKind::Assign]) {
+            self.advance_current_position();
+            initializer = Some(self.parse_expression()?);
+        }
+        self.consume_token(TokenKind::Semicolon)?;
+
+        Ok(Statement::Variable(VariableStatement::new(
+            identifier,
+            initializer,
+        )))
     }
 
     fn parse_print_statement(&mut self) -> Result<Statement, Error> {
@@ -149,6 +166,10 @@ impl Parser {
         ]) {
             Ok(Expression::Literal(LiteralExpression::new(
                 self.next_token().literal,
+            )))
+        } else if self.current_token_matches(&[TokenKind::Identifier]) {
+            Ok(Expression::Variable(VariableExpression::new(
+                self.next_token(),
             )))
         } else if self.current_token_matches(&[TokenKind::OpenParen]) {
             self.advance_current_position();

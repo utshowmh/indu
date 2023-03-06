@@ -1,7 +1,7 @@
 use crate::common::{
     ast::{
         BinaryExpression, Expression, ExpressionStatement, GroupExpression, LiteralExpression,
-        PrintStatement, Statement, UnaryExpression,
+        PrintStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
     },
     error::{Error, ErrorKind},
     object::Object,
@@ -9,14 +9,20 @@ use crate::common::{
     token::TokenKind,
 };
 
-pub(crate) struct Interpreter;
+use super::environment::Environment;
+
+pub(crate) struct Interpreter {
+    environment: Environment,
+}
 
 impl Interpreter {
     pub(crate) fn new() -> Self {
-        Self {}
+        Self {
+            environment: Environment::new(),
+        }
     }
 
-    pub(crate) fn interpret(&self, statements: Vec<Statement>) -> Result<(), Error> {
+    pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<(), Error> {
         for statement in statements {
             self.execute_statement(statement)?;
         }
@@ -26,11 +32,22 @@ impl Interpreter {
 }
 
 impl Interpreter {
-    fn execute_statement(&self, statement: Statement) -> Result<(), Error> {
+    fn execute_statement(&mut self, statement: Statement) -> Result<(), Error> {
         match statement {
+            Statement::Variable(statement) => self.execute_variable_statement(statement),
             Statement::Print(statement) => self.execute_print_statement(statement),
             Statement::Expression(statement) => self.execute_expression_statement(statement),
         }
+    }
+
+    fn execute_variable_statement(&mut self, statement: VariableStatement) -> Result<(), Error> {
+        let value = match statement.initializer {
+            Some(expression) => self.evaluate_expression(expression)?,
+            None => Object::Nil,
+        };
+        self.environment.set(statement.identifier.lexeme, value);
+
+        Ok(())
     }
 
     fn execute_print_statement(&self, statement: PrintStatement) -> Result<(), Error> {
@@ -54,6 +71,7 @@ impl Interpreter {
             Expression::Unary(expression) => self.evaluate_unary_expression(expression),
             Expression::Group(expression) => self.evaluate_group_expression(expression),
             Expression::Literal(expression) => self.evaluate_literal_expression(expression),
+            Expression::Variable(expression) => self.evaluate_variable_expression(expression),
         }
     }
 
@@ -237,6 +255,13 @@ impl Interpreter {
         } else {
             panic!("FIXME: Add proper error handling.")
         }
+    }
+
+    fn evaluate_variable_expression(
+        &self,
+        expression: VariableExpression,
+    ) -> Result<Object, Error> {
+        self.environment.get(expression.identifier)
     }
 }
 
