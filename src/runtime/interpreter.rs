@@ -13,14 +13,12 @@ use crate::common::{
 use super::environment::Environment;
 
 pub(crate) struct Interpreter {
-    environment: Environment,
+    pub(crate) environment: Environment,
 }
 
 impl Interpreter {
-    pub(crate) fn new() -> Self {
-        Self {
-            environment: Environment::new(),
-        }
+    pub(crate) fn new(environment: Environment) -> Self {
+        Self { environment }
     }
 
     pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<(), Error> {

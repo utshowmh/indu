@@ -9,6 +9,8 @@ use std::{
     process::exit,
 };
 
+use runtime::environment::Environment;
+
 use crate::{
     frontend::{parser::Parser, scanner::Scanner},
     runtime::interpreter::Interpreter,
@@ -44,7 +46,7 @@ fn run_file(source_path: &str) {
         exit(65);
     });
 
-    let mut interpreter = Interpreter::new();
+    let mut interpreter = Interpreter::new(Environment::new());
     interpreter.interpret(expression).unwrap_or_else(|error| {
         error.report();
         exit(65);
@@ -53,6 +55,8 @@ fn run_file(source_path: &str) {
 
 fn run_repl() {
     println!("Welcome to Indu REPL. Press Ctrl-C to exit.\n");
+
+    let mut environment = Environment::new();
 
     loop {
         print!("indu :> ");
@@ -74,10 +78,12 @@ fn run_repl() {
             Vec::new()
         });
 
-        let mut interpreter = Interpreter::new();
+        let mut interpreter = Interpreter::new(environment.clone());
         interpreter.interpret(expression).unwrap_or_else(|error| {
             error.report();
             ()
         });
+
+        environment = interpreter.environment.clone();
     }
 }

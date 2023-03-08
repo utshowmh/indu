@@ -6,6 +6,7 @@ use crate::common::{
     token::Token,
 };
 
+#[derive(Debug, Clone)]
 pub(crate) struct Environment {
     bindings: HashMap<String, Object>,
 }
