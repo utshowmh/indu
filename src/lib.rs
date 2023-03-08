@@ -16,6 +16,11 @@ use crate::{
     runtime::interpreter::Interpreter,
 };
 
+const COMMANDS: &str = "\
+#cmd        ->  prints available commands.
+#env        ->  shows environment (variable bindings).
+";
+
 pub fn run() {
     let args: Vec<String> = args().collect();
 
@@ -54,19 +59,34 @@ fn run_file(source_path: &str) {
 }
 
 fn run_repl() {
-    println!("Welcome to Indu REPL. Press Ctrl-C to exit.\n");
+    println!("Welcome to Indu REPL. Type  `#cmd` to see available commands.\n");
 
     let mut environment = Environment::new();
 
     loop {
-        print!("indu :> ");
+        print!("Indu :> ");
         stdout().flush().expect("ERROR: Could not flush stdout.");
         let mut line = String::new();
         stdin()
             .read_line(&mut line)
             .expect("ERROR: Could not read line from stdin.");
+        let line = line.trim();
 
-        let mut scanner = Scanner::new(line.trim());
+        if line.starts_with("#") {
+            match line {
+                "#cmd" => print!("{}", COMMANDS),
+                "#env" => print!("{}", environment),
+                "#exit" => {
+                    println!("Exiting Indu REPL.");
+                    break;
+                }
+                _ => eprintln!("ERROR: Unknown command `{}`.", line),
+            }
+
+            continue;
+        }
+
+        let mut scanner = Scanner::new(line);
         let tokens = scanner.scan().unwrap_or_else(|error| {
             error.report();
             Vec::new()

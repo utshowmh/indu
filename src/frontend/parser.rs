@@ -24,7 +24,7 @@ impl Parser {
     pub(crate) fn parse(&mut self) -> Result<Vec<Statement>, Error> {
         let mut statements = Vec::new();
 
-        while !self.current_token_is_eof() {
+        while self.position_in_bound() && !self.current_token_is_eof() {
             statements.push(self.parse_statement()?);
         }
 
@@ -207,6 +207,10 @@ impl Parser {
                 self.current_token().lexeme
             )))
         }
+    }
+
+    fn position_in_bound(&self) -> bool {
+        self.current_position < self.tokens.len()
     }
 
     fn current_token_is_eof(&self) -> bool {

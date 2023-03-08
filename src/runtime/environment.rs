@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 use crate::common::{
     error::{Error, ErrorKind},
@@ -32,5 +35,15 @@ impl Environment {
 
     pub(super) fn set(&mut self, identifier: String, value: Object) {
         self.bindings.insert(identifier, value);
+    }
+}
+
+impl Display for Environment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "variables:")?;
+        for (name, value) in &self.bindings {
+            writeln!(f, "   {} = {}", name, value)?;
+        }
+        Ok(())
     }
 }
