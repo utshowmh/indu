@@ -73,6 +73,7 @@ impl Parser {
     }
 
     fn parse_assignment_expression(&mut self) -> Result<Expression, Error> {
+        let assign_token = self.current_token();
         let expression = self.parse_binary_expression()?;
 
         if self.current_token_matches(&[TokenKind::Assign]) {
@@ -84,7 +85,11 @@ impl Parser {
                     initializer,
                 )));
             } else {
-                return Err(self.generate_error(format!("Invalid assignment target")));
+                return Err(Error::new(
+                    ErrorKind::ParserError,
+                    format!("Invalid assignment target"),
+                    assign_token.position,
+                ));
             }
         }
 

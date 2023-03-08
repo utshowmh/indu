@@ -25,8 +25,10 @@ impl Error {
 
     pub(crate) fn report(&self) {
         eprintln!(
-            "{:?}: {} in line {}:{}.",
-            self.kind, self.message, self.position.line, self.position.end
+            "[line {}, column {}]",
+            self.position.line,
+            self.position.start + 1,
         );
+        eprintln!("{:?}: {}.", self.kind, self.message,);
     }
 }
