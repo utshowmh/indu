@@ -1,7 +1,8 @@
 use crate::common::{
     ast::{
-        BinaryExpression, Expression, ExpressionStatement, GroupExpression, LiteralExpression,
-        PrintStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
+        AssignmentExpression, BinaryExpression, Expression, ExpressionStatement, GroupExpression,
+        LiteralExpression, PrintStatement, Statement, UnaryExpression, VariableExpression,
+        VariableStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -68,7 +69,26 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
-        self.parse_binary_expression()
+        self.parse_assignment_expression()
+    }
+
+    fn parse_assignment_expression(&mut self) -> Result<Expression, Error> {
+        let expression = self.parse_binary_expression()?;
+
+        if self.current_token_matches(&[TokenKind::Assign]) {
+            self.advance_current_position();
+            let initializer = self.parse_assignment_expression()?;
+            if let Expression::Variable(expression) = expression {
+                return Ok(Expression::Assignment(AssignmentExpression::new(
+                    expression.identifier,
+                    initializer,
+                )));
+            } else {
+                return Err(self.generate_error(format!("Invalid assignment target")));
+            }
+        }
+
+        Ok(expression)
     }
 
     fn parse_binary_expression(&mut self) -> Result<Expression, Error> {

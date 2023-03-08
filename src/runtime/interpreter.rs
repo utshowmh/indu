@@ -1,7 +1,8 @@
 use crate::common::{
     ast::{
-        BinaryExpression, Expression, ExpressionStatement, GroupExpression, LiteralExpression,
-        PrintStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
+        AssignmentExpression, BinaryExpression, Expression, ExpressionStatement, GroupExpression,
+        LiteralExpression, PrintStatement, Statement, UnaryExpression, VariableExpression,
+        VariableStatement,
     },
     error::{Error, ErrorKind},
     object::Object,
@@ -50,14 +51,17 @@ impl Interpreter {
         Ok(())
     }
 
-    fn execute_print_statement(&self, statement: PrintStatement) -> Result<(), Error> {
+    fn execute_print_statement(&mut self, statement: PrintStatement) -> Result<(), Error> {
         let value = self.evaluate_expression(statement.expression)?;
         println!("{}", value);
 
         Ok(())
     }
 
-    fn execute_expression_statement(&self, statement: ExpressionStatement) -> Result<(), Error> {
+    fn execute_expression_statement(
+        &mut self,
+        statement: ExpressionStatement,
+    ) -> Result<(), Error> {
         self.evaluate_expression(statement.expression)?;
 
         Ok(())
@@ -65,8 +69,9 @@ impl Interpreter {
 }
 
 impl Interpreter {
-    fn evaluate_expression(&self, expression: Expression) -> Result<Object, Error> {
+    fn evaluate_expression(&mut self, expression: Expression) -> Result<Object, Error> {
         match expression {
+            Expression::Assignment(expression) => self.evaluate_assignment_expression(expression),
             Expression::Binary(expression) => self.evaluate_binary_expression(expression),
             Expression::Unary(expression) => self.evaluate_unary_expression(expression),
             Expression::Group(expression) => self.evaluate_group_expression(expression),
@@ -75,7 +80,21 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_binary_expression(&self, expression: BinaryExpression) -> Result<Object, Error> {
+    fn evaluate_assignment_expression(
+        &mut self,
+        expression: AssignmentExpression,
+    ) -> Result<Object, Error> {
+        self.environment.get(expression.identifier.clone())?;
+        let value = self.evaluate_expression(*expression.initializer)?;
+        self.environment
+            .set(expression.identifier.lexeme, value.clone());
+        Ok(value)
+    }
+
+    fn evaluate_binary_expression(
+        &mut self,
+        expression: BinaryExpression,
+    ) -> Result<Object, Error> {
         let left_value = self.evaluate_expression(*expression.left)?;
         let right_value = self.evaluate_expression(*expression.right)?;
 
@@ -215,7 +234,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_unary_expression(&self, expression: UnaryExpression) -> Result<Object, Error> {
+    fn evaluate_unary_expression(&mut self, expression: UnaryExpression) -> Result<Object, Error> {
         let value = self.evaluate_expression(*expression.right)?;
 
         match expression.operator.kind {
@@ -245,7 +264,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_group_expression(&self, expression: GroupExpression) -> Result<Object, Error> {
+    fn evaluate_group_expression(&mut self, expression: GroupExpression) -> Result<Object, Error> {
         self.evaluate_expression(*expression.child)
     }
 

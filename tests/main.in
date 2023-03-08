@@ -1,2 +1,3 @@
-var name = "indu";
+var name;
+print name = "indu";
 print name;

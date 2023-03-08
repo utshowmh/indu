@@ -46,11 +46,27 @@ impl ExpressionStatement {
 
 #[derive(Debug)]
 pub(crate) enum Expression {
+    Assignment(AssignmentExpression),
     Binary(BinaryExpression),
     Unary(UnaryExpression),
     Group(GroupExpression),
     Literal(LiteralExpression),
     Variable(VariableExpression),
+}
+
+#[derive(Debug)]
+pub(crate) struct AssignmentExpression {
+    pub(crate) identifier: Token,
+    pub(crate) initializer: Box<Expression>,
+}
+
+impl AssignmentExpression {
+    pub(crate) fn new(identifier: Token, initializer: Expression) -> Self {
+        Self {
+            identifier,
+            initializer: Box::new(initializer),
+        }
+    }
 }
 
 #[derive(Debug)]
