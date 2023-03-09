@@ -1,8 +1,8 @@
 use crate::common::{
     ast::{
-        AssignmentExpression, BinaryExpression, Expression, ExpressionStatement, GroupExpression,
-        LiteralExpression, PrintStatement, Statement, UnaryExpression, VariableExpression,
-        VariableStatement,
+        AssignmentExpression, BinaryExpression, BlockStatement, Expression, ExpressionStatement,
+        GroupExpression, LiteralExpression, PrintStatement, Statement, UnaryExpression,
+        VariableExpression, VariableStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -33,10 +33,23 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
         match self.current_token().kind {
+            TokenKind::OpenBrace => self.parse_block_statement(),
             TokenKind::Var => self.parse_var_statement(),
             TokenKind::Print => self.parse_print_statement(),
             _ => self.parse_expression_statement(),
         }
+    }
+
+    fn parse_block_statement(&mut self) -> Result<Statement, Error> {
+        self.advance_current_index();
+        let mut statements = Vec::new();
+        while !self.current_token_matches(&[TokenKind::CloseBrace]) && !self.current_token_is_eof()
+        {
+            statements.push(self.parse_statement()?);
+        }
+        self.consume_token(TokenKind::CloseBrace)?;
+
+        Ok(Statement::Block(BlockStatement::new(statements)))
     }
 
     fn parse_var_statement(&mut self) -> Result<Statement, Error> {

@@ -2,9 +2,23 @@ use super::{object::Object, token::Token};
 
 #[derive(Debug)]
 pub(crate) enum Statement {
+    Block(BlockStatement),
     Variable(VariableStatement),
     Print(PrintStatement),
     Expression(ExpressionStatement),
+}
+
+#[derive(Debug)]
+pub(crate) struct BlockStatement {
+    pub(crate) statements: Box<Vec<Statement>>,
+}
+
+impl BlockStatement {
+    pub(crate) fn new(statements: Vec<Statement>) -> Self {
+        Self {
+            statements: Box::new(statements),
+        }
+    }
 }
 
 #[derive(Debug)]

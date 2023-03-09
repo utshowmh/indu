@@ -1,3 +1,8 @@
 var pi = 3.1416;
 
+{
+    pi = 22 / 7;
+    print pi;
+}
+
 print pi;
