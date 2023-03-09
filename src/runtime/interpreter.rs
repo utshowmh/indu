@@ -225,13 +225,21 @@ impl Interpreter {
                 )),
             },
 
-            TokenKind::And => Ok(Object::Boolean(
-                left_value.is_truthy() && right_value.is_truthy(),
-            )),
+            TokenKind::And => {
+                if !left_value.is_truthy() {
+                    Ok(left_value)
+                } else {
+                    Ok(right_value)
+                }
+            }
 
-            TokenKind::Or => Ok(Object::Boolean(
-                left_value.is_truthy() || right_value.is_truthy(),
-            )),
+            TokenKind::Or => {
+                if left_value.is_truthy() {
+                    Ok(left_value)
+                } else {
+                    Ok(right_value)
+                }
+            }
 
             _ => Err(self.generate_unexpected_operator_error(
                 &expression.operator.lexeme,
