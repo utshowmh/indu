@@ -2,10 +2,32 @@ use super::{object::Object, token::Token};
 
 #[derive(Debug)]
 pub(crate) enum Statement {
+    If(IfStatement),
     Block(BlockStatement),
     Variable(VariableStatement),
     Print(PrintStatement),
     Expression(ExpressionStatement),
+}
+
+#[derive(Debug)]
+pub(crate) struct IfStatement {
+    pub(crate) condition: Expression,
+    pub(crate) then_branch: Box<Statement>,
+    pub(crate) else_branch: Box<Option<Statement>>,
+}
+
+impl IfStatement {
+    pub(crate) fn new(
+        condition: Expression,
+        then_branch: Statement,
+        else_branch: Option<Statement>,
+    ) -> Self {
+        Self {
+            condition,
+            then_branch: Box::new(then_branch),
+            else_branch: Box::new(else_branch),
+        }
+    }
 }
 
 #[derive(Debug)]

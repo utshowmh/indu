@@ -2,10 +2,20 @@ use std::fmt::{Display, Formatter, Result};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Object {
-    Number(f64),
     String(String),
+    Number(f64),
     Boolean(bool),
     Nil,
+}
+impl Object {
+    pub(crate) fn is_truthy(&self) -> bool {
+        match self {
+            Object::String(string) => string.len() != 0,
+            Object::Number(number) => number != &0.,
+            Object::Boolean(boolean) => boolean.clone(),
+            Object::Nil => false,
+        }
+    }
 }
 
 impl Display for Object {

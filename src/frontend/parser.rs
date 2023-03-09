@@ -1,8 +1,8 @@
 use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, Expression, ExpressionStatement,
-        GroupExpression, LiteralExpression, PrintStatement, Statement, UnaryExpression,
-        VariableExpression, VariableStatement,
+        GroupExpression, IfStatement, LiteralExpression, PrintStatement, Statement,
+        UnaryExpression, VariableExpression, VariableStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -33,10 +33,32 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
         match self.current_token().kind {
+            TokenKind::If => self.parse_if_statement(),
             TokenKind::OpenBrace => self.parse_block_statement(),
             TokenKind::Var => self.parse_var_statement(),
             TokenKind::Print => self.parse_print_statement(),
             _ => self.parse_expression_statement(),
+        }
+    }
+
+    fn parse_if_statement(&mut self) -> Result<Statement, Error> {
+        self.advance_current_index();
+        let condition = self.parse_expression()?;
+        let then_branch = self.parse_block_statement()?;
+        if self.current_token_matches(&[TokenKind::Else]) {
+            self.advance_current_index();
+            let else_brach = self.parse_block_statement()?;
+            Ok(Statement::If(IfStatement::new(
+                condition,
+                then_branch,
+                Some(else_brach),
+            )))
+        } else {
+            Ok(Statement::If(IfStatement::new(
+                condition,
+                then_branch,
+                None,
+            )))
         }
     }
 

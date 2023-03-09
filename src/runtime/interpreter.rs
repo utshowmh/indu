@@ -1,8 +1,8 @@
 use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, Expression, ExpressionStatement,
-        GroupExpression, LiteralExpression, PrintStatement, Statement, UnaryExpression,
-        VariableExpression, VariableStatement,
+        GroupExpression, IfStatement, LiteralExpression, PrintStatement, Statement,
+        UnaryExpression, VariableExpression, VariableStatement,
     },
     error::{Error, ErrorKind},
     object::Object,
@@ -33,11 +33,25 @@ impl Interpreter {
 impl Interpreter {
     fn execute_statement(&mut self, statement: Statement) -> Result<(), Error> {
         match statement {
+            Statement::If(statement) => self.execute_if_statement(statement),
             Statement::Block(statement) => self.execute_block_statement(statement),
             Statement::Variable(statement) => self.execute_variable_statement(statement),
             Statement::Print(statement) => self.execute_print_statement(statement),
             Statement::Expression(statement) => self.execute_expression_statement(statement),
         }
+    }
+
+    fn execute_if_statement(&mut self, statement: IfStatement) -> Result<(), Error> {
+        let condition = self.evaluate_expression(statement.condition)?;
+        if condition.is_truthy() {
+            self.execute_statement(*statement.then_branch)?;
+        } else {
+            if let Some(else_brach) = *statement.else_branch {
+                self.execute_statement(else_brach)?;
+            }
+        }
+
+        Ok(())
     }
 
     fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<(), Error> {
