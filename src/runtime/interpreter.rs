@@ -2,7 +2,7 @@ use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, Expression, ExpressionStatement,
         GroupExpression, IfStatement, LiteralExpression, PrintStatement, Statement,
-        UnaryExpression, VariableExpression, VariableStatement,
+        UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     object::Object,
@@ -34,6 +34,7 @@ impl Interpreter {
     fn execute_statement(&mut self, statement: Statement) -> Result<(), Error> {
         match statement {
             Statement::If(statement) => self.execute_if_statement(statement),
+            Statement::While(statement) => self.execute_while_statement(statement),
             Statement::Block(statement) => self.execute_block_statement(statement),
             Statement::Variable(statement) => self.execute_variable_statement(statement),
             Statement::Print(statement) => self.execute_print_statement(statement),
@@ -44,22 +45,30 @@ impl Interpreter {
     fn execute_if_statement(&mut self, statement: IfStatement) -> Result<(), Error> {
         let condition = self.evaluate_expression(statement.condition)?;
         if condition.is_truthy() {
-            self.execute_statement(*statement.then_branch)?;
+            self.execute_statement(*statement.then_block)?;
         } else {
-            if let Some(else_brach) = *statement.else_branch {
-                self.execute_statement(else_brach)?;
+            if let Some(else_block) = *statement.else_block {
+                self.execute_statement(else_block)?;
             }
         }
 
         Ok(())
     }
 
+    fn execute_while_statement(&mut self, statement: WhileStatement) -> Result<(), Error> {
+        let mut condition = self.evaluate_expression(statement.condition.clone())?;
+        while condition.is_truthy() {
+            self.execute_statement(*statement.do_block.clone())?;
+            condition = self.evaluate_expression(statement.condition.clone())?;
+        }
+
+        Ok(())
+    }
+
     fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<(), Error> {
-        let old_environment = self.environment.clone();
         for statement in *statement.statements {
             self.execute_statement(statement)?;
         }
-        self.environment = old_environment;
 
         Ok(())
     }

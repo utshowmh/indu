@@ -1,36 +1,52 @@
 use super::{object::Object, token::Token};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Statement {
     If(IfStatement),
+    While(WhileStatement),
     Block(BlockStatement),
     Variable(VariableStatement),
     Print(PrintStatement),
     Expression(ExpressionStatement),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub(crate) struct WhileStatement {
+    pub(crate) condition: Expression,
+    pub(crate) do_block: Box<Statement>,
+}
+
+impl WhileStatement {
+    pub(crate) fn new(condition: Expression, do_block: Statement) -> Self {
+        Self {
+            condition,
+            do_block: Box::new(do_block),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct IfStatement {
     pub(crate) condition: Expression,
-    pub(crate) then_branch: Box<Statement>,
-    pub(crate) else_branch: Box<Option<Statement>>,
+    pub(crate) then_block: Box<Statement>,
+    pub(crate) else_block: Box<Option<Statement>>,
 }
 
 impl IfStatement {
     pub(crate) fn new(
         condition: Expression,
-        then_branch: Statement,
-        else_branch: Option<Statement>,
+        then_block: Statement,
+        else_block: Option<Statement>,
     ) -> Self {
         Self {
             condition,
-            then_branch: Box::new(then_branch),
-            else_branch: Box::new(else_branch),
+            then_block: Box::new(then_block),
+            else_block: Box::new(else_block),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct BlockStatement {
     pub(crate) statements: Box<Vec<Statement>>,
 }
@@ -43,7 +59,7 @@ impl BlockStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct VariableStatement {
     pub(crate) identifier: Token,
     pub(crate) initializer: Option<Expression>,
@@ -58,7 +74,7 @@ impl VariableStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct PrintStatement {
     pub(crate) expression: Expression,
 }
@@ -69,7 +85,7 @@ impl PrintStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct ExpressionStatement {
     pub(crate) expression: Expression,
 }
@@ -80,7 +96,7 @@ impl ExpressionStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Expression {
     Assignment(AssignmentExpression),
     Binary(BinaryExpression),
@@ -90,7 +106,7 @@ pub(crate) enum Expression {
     Variable(VariableExpression),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct AssignmentExpression {
     pub(crate) identifier: Token,
     pub(crate) initializer: Box<Expression>,
@@ -105,7 +121,7 @@ impl AssignmentExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct BinaryExpression {
     pub(crate) left: Box<Expression>,
     pub(crate) operator: Token,
@@ -122,7 +138,7 @@ impl BinaryExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct UnaryExpression {
     pub(crate) operator: Token,
     pub(crate) right: Box<Expression>,
@@ -137,7 +153,7 @@ impl UnaryExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct GroupExpression {
     pub(crate) child: Box<Expression>,
 }
@@ -150,7 +166,7 @@ impl GroupExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct LiteralExpression {
     pub(crate) value: Option<Object>,
 }
@@ -161,7 +177,7 @@ impl LiteralExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct VariableExpression {
     pub(crate) identifier: Token,
 }

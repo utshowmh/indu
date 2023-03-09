@@ -1,7 +1,6 @@
-var it = true;
+var i = 100;
 
-if (it) {
-    print "ok";
-} else {
-    print "no";
+while (i != 0) {
+    print i;
+    i = i - 1;
 }

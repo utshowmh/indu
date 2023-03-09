@@ -2,7 +2,7 @@ use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, Expression, ExpressionStatement,
         GroupExpression, IfStatement, LiteralExpression, PrintStatement, Statement,
-        UnaryExpression, VariableExpression, VariableStatement,
+        UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -34,6 +34,7 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<Statement, Error> {
         match self.current_token().kind {
             TokenKind::If => self.parse_if_statement(),
+            TokenKind::While => self.parse_while_statement(),
             TokenKind::OpenBrace => self.parse_block_statement(),
             TokenKind::Var => self.parse_var_statement(),
             TokenKind::Print => self.parse_print_statement(),
@@ -46,22 +47,28 @@ impl Parser {
         self.consume_token(TokenKind::OpenParen)?;
         let condition = self.parse_expression()?;
         self.consume_token(TokenKind::CloseParen)?;
-        let then_branch = self.parse_block_statement()?;
+        let then_block = self.parse_block_statement()?;
         if self.current_token_matches(&[TokenKind::Else]) {
             self.advance_current_index();
-            let else_brach = self.parse_block_statement()?;
+            let else_block = self.parse_block_statement()?;
             Ok(Statement::If(IfStatement::new(
                 condition,
-                then_branch,
-                Some(else_brach),
+                then_block,
+                Some(else_block),
             )))
         } else {
-            Ok(Statement::If(IfStatement::new(
-                condition,
-                then_branch,
-                None,
-            )))
+            Ok(Statement::If(IfStatement::new(condition, then_block, None)))
         }
+    }
+
+    fn parse_while_statement(&mut self) -> Result<Statement, Error> {
+        self.advance_current_index();
+        self.consume_token(TokenKind::OpenParen)?;
+        let condition = self.parse_expression()?;
+        self.consume_token(TokenKind::CloseParen)?;
+        let do_block = self.parse_block_statement()?;
+
+        Ok(Statement::While(WhileStatement::new(condition, do_block)))
     }
 
     fn parse_block_statement(&mut self) -> Result<Statement, Error> {
