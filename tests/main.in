@@ -1,3 +1,3 @@
-var name;
-print name = "indu";
-print name;
+var pi = 3.1416;
+
+print pi;

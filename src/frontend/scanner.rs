@@ -10,9 +10,9 @@ use crate::common::{
 pub(crate) struct Scanner {
     source: Vec<char>,
 
-    start_position: usize,
-    current_position: usize,
-    current_line: usize,
+    start_index: usize,
+    current_index: usize,
+    current_position: Position,
 
     keywords: HashMap<String, TokenKind>,
 }
@@ -22,9 +22,9 @@ impl Scanner {
         Self {
             source: source.chars().collect(),
 
-            start_position: 0,
-            current_position: 0,
-            current_line: 1,
+            start_index: 0,
+            current_index: 0,
+            current_position: Position::new(1, 1),
 
             keywords: HashMap::new(),
         }
@@ -35,8 +35,8 @@ impl Scanner {
 
         let mut tokens = Vec::new();
 
-        while self.position_in_bound() {
-            self.start_position = self.current_position;
+        while self.index_in_bound() {
+            self.start_index = self.current_index;
             if let Some(token) = self.next_token()? {
                 tokens.push(token);
             }
@@ -46,7 +46,7 @@ impl Scanner {
             TokenKind::EOF,
             String::from("\0"),
             None,
-            self.generate_position(),
+            self.current_position.clone(),
         ));
 
         Ok(tokens)
@@ -57,7 +57,8 @@ impl Scanner {
         match current_char {
             ' ' | '\t' | '\r' => Ok(None),
             '\n' => {
-                self.current_line += 1;
+                self.current_position.column = 1;
+                self.current_position.line += 1;
                 Ok(None)
             }
 
@@ -65,24 +66,24 @@ impl Scanner {
                 TokenKind::Plus,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             '-' => Ok(Some(Token::new(
                 TokenKind::Minus,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             '*' => Ok(Some(Token::new(
                 TokenKind::Star,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             '/' => {
                 if self.current_charecter() == '/' {
-                    while self.current_charecter() != '\n' && self.position_in_bound() {
-                        self.advance_current_position();
+                    while self.current_charecter() != '\n' && self.index_in_bound() {
+                        self.advance_current_index();
                     }
                     Ok(None)
                 } else {
@@ -90,7 +91,7 @@ impl Scanner {
                         TokenKind::Slash,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 }
             }
@@ -99,117 +100,117 @@ impl Scanner {
                 TokenKind::OpenParen,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             ')' => Ok(Some(Token::new(
                 TokenKind::CloseParen,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             '{' => Ok(Some(Token::new(
                 TokenKind::OpenBrace,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             '}' => Ok(Some(Token::new(
                 TokenKind::CloseBrace,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             ',' => Ok(Some(Token::new(
                 TokenKind::Comma,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             '.' => Ok(Some(Token::new(
                 TokenKind::Dot,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
             ';' => Ok(Some(Token::new(
                 TokenKind::Semicolon,
                 self.generate_lexeme(),
                 None,
-                self.generate_position(),
+                self.current_position.clone(),
             ))),
 
             '=' => {
                 if self.current_charecter() == '=' {
-                    self.advance_current_position();
+                    self.advance_current_index();
                     Ok(Some(Token::new(
                         TokenKind::Equal,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 } else {
                     Ok(Some(Token::new(
                         TokenKind::Assign,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 }
             }
 
             '!' => {
                 if self.current_charecter() == '=' {
-                    self.advance_current_position();
+                    self.advance_current_index();
                     Ok(Some(Token::new(
                         TokenKind::NotEqual,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 } else {
                     Ok(Some(Token::new(
                         TokenKind::Not,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 }
             }
 
             '>' => {
                 if self.current_charecter() == '=' {
-                    self.advance_current_position();
+                    self.advance_current_index();
                     Ok(Some(Token::new(
                         TokenKind::GreaterEqual,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 } else {
                     Ok(Some(Token::new(
                         TokenKind::Greater,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 }
             }
 
             '<' => {
                 if self.current_charecter() == '=' {
-                    self.advance_current_position();
+                    self.advance_current_index();
                     Ok(Some(Token::new(
                         TokenKind::LesserEqual,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 } else {
                     Ok(Some(Token::new(
                         TokenKind::Lesser,
                         self.generate_lexeme(),
                         None,
-                        self.generate_position(),
+                        self.current_position.clone(),
                     )))
                 }
             }
@@ -219,7 +220,7 @@ impl Scanner {
                     while self.current_charecter().is_ascii_alphanumeric()
                         || self.current_charecter() == '_'
                     {
-                        self.advance_current_position();
+                        self.advance_current_index();
                     }
                     let lexeme = self.generate_lexeme();
                     if let Some(token_kind) = self.keywords.get(&lexeme) {
@@ -228,25 +229,25 @@ impl Scanner {
                                 token_kind.clone(),
                                 lexeme,
                                 Some(Object::Boolean(true)),
-                                self.generate_position(),
+                                self.current_position.clone(),
                             ))),
                             TokenKind::False => Ok(Some(Token::new(
                                 token_kind.clone(),
                                 lexeme,
                                 Some(Object::Boolean(false)),
-                                self.generate_position(),
+                                self.current_position.clone(),
                             ))),
                             TokenKind::Nil => Ok(Some(Token::new(
                                 token_kind.clone(),
                                 lexeme,
                                 Some(Object::Nil),
-                                self.generate_position(),
+                                self.current_position.clone(),
                             ))),
                             _ => Ok(Some(Token::new(
                                 token_kind.clone(),
                                 lexeme,
                                 None,
-                                self.generate_position(),
+                                self.current_position.clone(),
                             ))),
                         }
                     } else {
@@ -254,12 +255,18 @@ impl Scanner {
                             TokenKind::Identifier,
                             lexeme,
                             None,
-                            self.generate_position(),
+                            self.current_position.clone(),
                         )))
                     }
                 } else if current_char.is_ascii_digit() {
                     while self.current_charecter().is_ascii_digit() {
-                        self.advance_current_position();
+                        self.advance_current_index();
+                    }
+                    if self.current_charecter() == '.' {
+                        self.advance_current_index();
+                        while self.current_charecter().is_ascii_digit() {
+                            self.advance_current_index();
+                        }
                     }
                     let lexeme = self.generate_lexeme();
                     if let Ok(num) = lexeme.parse() {
@@ -267,27 +274,27 @@ impl Scanner {
                             TokenKind::Number,
                             lexeme,
                             Some(Object::Number(num)),
-                            self.generate_position(),
+                            self.current_position.clone(),
                         )))
                     } else {
                         Err(self
                             .generate_error(format!("Could not convert `{}` to `Number`", lexeme)))
                     }
                 } else if current_char == '"' {
-                    while self.current_charecter() != '"' && self.position_in_bound() {
-                        self.advance_current_position();
+                    while self.current_charecter() != '"' && self.index_in_bound() {
+                        self.advance_current_index();
                     }
                     if self.current_charecter() == '"' {
-                        self.advance_current_position();
+                        self.advance_current_index();
                         let lexeme: String = self.source
-                            [self.start_position + 1..self.current_position - 1]
+                            [self.start_index + 1..self.current_index - 1]
                             .iter()
                             .collect();
                         Ok(Some(Token::new(
                             TokenKind::String,
                             lexeme.clone(),
                             Some(Object::String(lexeme)),
-                            self.generate_position(),
+                            self.current_position.clone(),
                         )))
                     } else {
                         Err(self.generate_error(format!(
@@ -322,43 +329,40 @@ impl Scanner {
         self.keywords.insert("while".to_string(), TokenKind::While);
     }
 
-    fn position_in_bound(&self) -> bool {
-        self.current_position < self.source.len()
+    fn index_in_bound(&self) -> bool {
+        self.current_index < self.source.len()
     }
 
     fn current_charecter(&self) -> char {
-        if self.position_in_bound() {
-            self.source[self.current_position]
+        if self.index_in_bound() {
+            self.source[self.current_index]
         } else {
             '\0'
         }
     }
 
-    fn advance_current_position(&mut self) {
-        self.current_position += 1;
+    fn advance_current_index(&mut self) {
+        self.current_index += 1;
+        self.current_position.column += 1;
     }
 
     fn next_charecter(&mut self) -> char {
         let char = self.current_charecter();
-        self.advance_current_position();
+        self.advance_current_index();
         char
     }
 
     fn generate_lexeme(&self) -> String {
-        self.source[self.start_position..self.current_position]
+        self.source[self.start_index..self.current_index]
             .iter()
             .collect()
     }
 
-    fn generate_position(&self) -> Position {
-        Position::new(
-            self.start_position,
-            self.current_position,
-            self.current_line,
-        )
-    }
-
     fn generate_error(&self, message: String) -> Error {
-        Error::new(ErrorKind::LexerError, message, self.generate_position())
+        Error::new(
+            ErrorKind::LexerError,
+            message,
+            self.current_position.clone(),
+        )
     }
 }

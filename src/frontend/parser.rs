@@ -10,21 +10,21 @@ use crate::common::{
 
 pub(crate) struct Parser {
     tokens: Vec<Token>,
-    current_position: usize,
+    current_index: usize,
 }
 
 impl Parser {
     pub(crate) fn new(tokens: Vec<Token>) -> Self {
         Self {
             tokens,
-            current_position: 0,
+            current_index: 0,
         }
     }
 
     pub(crate) fn parse(&mut self) -> Result<Vec<Statement>, Error> {
         let mut statements = Vec::new();
 
-        while self.position_in_bound() && !self.current_token_is_eof() {
+        while self.index_in_bound() && !self.current_token_is_eof() {
             statements.push(self.parse_statement()?);
         }
 
@@ -40,11 +40,11 @@ impl Parser {
     }
 
     fn parse_var_statement(&mut self) -> Result<Statement, Error> {
-        self.advance_current_position();
+        self.advance_current_index();
         let identifier = self.consume_token(TokenKind::Identifier)?;
         let mut initializer = None;
         if self.current_token_matches(&[TokenKind::Assign]) {
-            self.advance_current_position();
+            self.advance_current_index();
             initializer = Some(self.parse_expression()?);
         }
         self.consume_token(TokenKind::Semicolon)?;
@@ -56,7 +56,7 @@ impl Parser {
     }
 
     fn parse_print_statement(&mut self) -> Result<Statement, Error> {
-        self.advance_current_position();
+        self.advance_current_index();
         let expression = self.parse_expression()?;
         self.consume_token(TokenKind::Semicolon)?;
         Ok(Statement::Print(PrintStatement::new(expression)))
@@ -77,7 +77,7 @@ impl Parser {
         let expression = self.parse_binary_expression()?;
 
         if self.current_token_matches(&[TokenKind::Assign]) {
-            self.advance_current_position();
+            self.advance_current_index();
             let initializer = self.parse_assignment_expression()?;
             if let Expression::Variable(expression) = expression {
                 return Ok(Expression::Assignment(AssignmentExpression::new(
@@ -197,7 +197,7 @@ impl Parser {
                 self.next_token(),
             )))
         } else if self.current_token_matches(&[TokenKind::OpenParen]) {
-            self.advance_current_position();
+            self.advance_current_index();
             let child = self.parse_expression()?;
             self.consume_token(TokenKind::CloseParen)?;
             Ok(Expression::Group(GroupExpression::new(child)))
@@ -209,8 +209,8 @@ impl Parser {
         }
     }
 
-    fn position_in_bound(&self) -> bool {
-        self.current_position < self.tokens.len()
+    fn index_in_bound(&self) -> bool {
+        self.current_index < self.tokens.len()
     }
 
     fn current_token_is_eof(&self) -> bool {
@@ -218,16 +218,16 @@ impl Parser {
     }
 
     fn current_token(&self) -> Token {
-        self.tokens[self.current_position].clone()
+        self.tokens[self.current_index].clone()
     }
 
-    fn advance_current_position(&mut self) {
-        self.current_position += 1;
+    fn advance_current_index(&mut self) {
+        self.current_index += 1;
     }
 
     fn next_token(&mut self) -> Token {
         let token = self.current_token();
-        self.advance_current_position();
+        self.advance_current_index();
         token
     }
 
