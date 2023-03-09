@@ -1,6 +1,6 @@
 var it = true;
 
-if it {
+if (it) {
     print "ok";
 } else {
     print "no";

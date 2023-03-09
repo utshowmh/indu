@@ -43,7 +43,9 @@ impl Parser {
 
     fn parse_if_statement(&mut self) -> Result<Statement, Error> {
         self.advance_current_index();
+        self.consume_token(TokenKind::OpenParen)?;
         let condition = self.parse_expression()?;
+        self.consume_token(TokenKind::CloseParen)?;
         let then_branch = self.parse_block_statement()?;
         if self.current_token_matches(&[TokenKind::Else]) {
             self.advance_current_index();
