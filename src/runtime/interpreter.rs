@@ -225,29 +225,13 @@ impl Interpreter {
                 )),
             },
 
-            TokenKind::And => match (&left_value, &right_value) {
-                (Object::Boolean(left_value), Object::Boolean(right_value)) => {
-                    Ok(Object::Boolean(left_value.clone() && right_value.clone()))
-                }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
-                    &expression.operator.lexeme,
-                    left_value,
-                    right_value,
-                    expression.operator.position,
-                )),
-            },
+            TokenKind::And => Ok(Object::Boolean(
+                left_value.is_truthy() && right_value.is_truthy(),
+            )),
 
-            TokenKind::Or => match (&left_value, &right_value) {
-                (Object::Boolean(left_value), Object::Boolean(right_value)) => {
-                    Ok(Object::Boolean(left_value.clone() || right_value.clone()))
-                }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
-                    &expression.operator.lexeme,
-                    left_value,
-                    right_value,
-                    expression.operator.position,
-                )),
-            },
+            TokenKind::Or => Ok(Object::Boolean(
+                left_value.is_truthy() || right_value.is_truthy(),
+            )),
 
             _ => Err(self.generate_unexpected_operator_error(
                 &expression.operator.lexeme,
