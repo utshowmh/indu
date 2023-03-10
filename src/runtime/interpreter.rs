@@ -35,7 +35,10 @@ impl Interpreter {
         match statement {
             Statement::If(statement) => self.execute_if_statement(statement),
             Statement::While(statement) => self.execute_while_statement(statement),
-            Statement::Block(statement) => self.execute_block_statement(statement),
+            Statement::Block(statement) => self.execute_block_statement(
+                statement,
+                Environment::new(Some(self.environment.clone())),
+            ),
             Statement::Variable(statement) => self.execute_variable_statement(statement),
             Statement::Print(statement) => self.execute_print_statement(statement),
             Statement::Expression(statement) => self.execute_expression_statement(statement),
@@ -46,10 +49,8 @@ impl Interpreter {
         let condition = self.evaluate_expression(statement.condition)?;
         if condition.is_truthy() {
             self.execute_statement(*statement.then_block)?;
-        } else {
-            if let Some(else_block) = *statement.else_block {
-                self.execute_statement(else_block)?;
-            }
+        } else if let Some(else_block) = *statement.else_block {
+            self.execute_statement(else_block)?;
         }
 
         Ok(())
@@ -65,10 +66,20 @@ impl Interpreter {
         Ok(())
     }
 
-    fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<(), Error> {
-        for statement in *statement.statements {
+    fn execute_block_statement(
+        &mut self,
+        statement: BlockStatement,
+        environment: Environment,
+    ) -> Result<(), Error> {
+        self.environment = environment;
+        for statement in statement.statements {
             self.execute_statement(statement)?;
         }
+        self.environment = self
+            .environment
+            .enclosing
+            .clone()
+            .unwrap_or(Environment::new(None));
 
         Ok(())
     }
@@ -78,14 +89,14 @@ impl Interpreter {
             Some(expression) => self.evaluate_expression(expression)?,
             None => Object::Nil,
         };
-        self.environment.set(statement.identifier.lexeme, value);
+        self.environment.define(statement.identifier, value);
 
         Ok(())
     }
 
     fn execute_print_statement(&mut self, statement: PrintStatement) -> Result<(), Error> {
         let value = self.evaluate_expression(statement.expression)?;
-        println!("{}", value);
+        println!("{value}");
 
         Ok(())
     }
@@ -116,10 +127,9 @@ impl Interpreter {
         &mut self,
         expression: AssignmentExpression,
     ) -> Result<Object, Error> {
-        self.environment.get(expression.identifier.clone())?;
         let value = self.evaluate_expression(*expression.initializer)?;
         self.environment
-            .set(expression.identifier.lexeme, value.clone());
+            .assign(expression.identifier, value.clone())?;
         Ok(value)
     }
 
@@ -136,7 +146,7 @@ impl Interpreter {
                     Ok(Object::Number(left_value + right_value))
                 }
                 (Object::String(left_value), Object::String(right_value)) => {
-                    Ok(Object::String(format!("{}{}", left_value, right_value)))
+                    Ok(Object::String(format!("{left_value}{right_value}")))
                 }
                 (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
@@ -304,7 +314,7 @@ impl Interpreter {
         &self,
         expression: VariableExpression,
     ) -> Result<Object, Error> {
-        self.environment.get(expression.identifier)
+        self.environment.access(expression.identifier)
     }
 }
 
@@ -316,10 +326,7 @@ impl Interpreter {
         operator_position: Position,
     ) -> Result<Object, Error> {
         Err(self.generate_error(
-            format!(
-                "Invalid unary operation. `{}` is not defined for `{}`",
-                operator_lexeme, value
-            ),
+            format!("Invalid unary operation. `{operator_lexeme}` is not defined for `{value}`"),
             operator_position,
         ))
     }
@@ -333,8 +340,7 @@ impl Interpreter {
     ) -> Error {
         self.generate_error(
             format!(
-                "Invalid binary operation. `{}` is not defined for `{}` and `{}`",
-                operator_lexeme, left_value, right_value
+                "Invalid binary operation. `{operator_lexeme}` is not defined for `{left_value}` and `{right_value}`"
             ),
             operator_position,
         )
@@ -348,8 +354,7 @@ impl Interpreter {
     ) -> Error {
         self.generate_error(
             format!(
-                "Unexpexted operator. `{}` is not as {} operator",
-                operator_lexeme, current_operation,
+                "Unexpexted operator. `{operator_lexeme}` is not as {current_operation} operator",
             ),
             operator_position,
         )

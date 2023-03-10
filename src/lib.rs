@@ -24,20 +24,23 @@ const COMMANDS: &str = "\
 pub fn run() {
     let args: Vec<String> = args().collect();
 
-    if args.len() > 2 {
-        eprintln!("Usage: indu [script]");
-        exit(64);
-    } else if args.len() == 2 {
-        let source_path = &args[1];
-        run_file(source_path);
-    } else {
-        run_repl();
+    match args.len() {
+        1 => run_repl(),
+
+        2 => {
+            let source_path = &args[1];
+            run_file(source_path);
+        }
+        _ => {
+            eprintln!("Usage: indu [script]");
+            exit(64);
+        }
     }
 }
 
 fn run_file(source_path: &str) {
-    let source =
-        read_to_string(source_path).expect(&format!("ERROR: Could not read file {}.", source_path));
+    let source = read_to_string(source_path)
+        .unwrap_or_else(|_| panic!("ERROR: Could not read file {source_path}."));
 
     let mut scanner = Scanner::new(&source);
     let tokens = scanner.scan().unwrap_or_else(|error| {
@@ -51,7 +54,7 @@ fn run_file(source_path: &str) {
         exit(65);
     });
 
-    let mut interpreter = Interpreter::new(Environment::new());
+    let mut interpreter = Interpreter::new(Environment::new(None));
     interpreter.interpret(expression).unwrap_or_else(|error| {
         error.report();
         exit(65);
@@ -61,7 +64,7 @@ fn run_file(source_path: &str) {
 fn run_repl() {
     println!("Welcome to Indu REPL. Type  `#cmd` to see available commands.\n");
 
-    let mut environment = Environment::new();
+    let mut environment = Environment::new(None);
 
     loop {
         print!("Indu :> ");
@@ -72,15 +75,15 @@ fn run_repl() {
             .expect("ERROR: Could not read line from stdin.");
         let line = line.trim();
 
-        if line.starts_with("#") {
+        if line.starts_with('#') {
             match line {
-                "#cmd" => print!("{}", COMMANDS),
-                "#env" => print!("{}", environment),
+                "#cmd" => print!("{COMMANDS}"),
+                "#env" => print!("{environment}"),
                 "#exit" => {
                     println!("Exiting Indu REPL.");
                     break;
                 }
-                _ => eprintln!("ERROR: Unknown command `{}`.", line),
+                _ => eprintln!("ERROR: Unknown command `{line}`."),
             }
 
             continue;
@@ -101,7 +104,6 @@ fn run_repl() {
         let mut interpreter = Interpreter::new(environment.clone());
         interpreter.interpret(expression).unwrap_or_else(|error| {
             error.report();
-            ()
         });
 
         environment = interpreter.environment.clone();

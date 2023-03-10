@@ -131,7 +131,7 @@ impl Parser {
             } else {
                 return Err(Error::new(
                     ErrorKind::ParserError,
-                    format!("Invalid assignment target"),
+                    "Invalid assignment target".to_string(),
                     assign_token.position,
                 ));
             }
@@ -295,7 +295,7 @@ impl Parser {
         Error::new(
             ErrorKind::ParserError,
             message,
-            self.current_token().position.clone(),
+            self.current_token().position,
         )
     }
 }

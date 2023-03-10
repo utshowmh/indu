@@ -48,14 +48,12 @@ impl IfStatement {
 
 #[derive(Debug, Clone)]
 pub(crate) struct BlockStatement {
-    pub(crate) statements: Box<Vec<Statement>>,
+    pub(crate) statements: Vec<Statement>,
 }
 
 impl BlockStatement {
     pub(crate) fn new(statements: Vec<Statement>) -> Self {
-        Self {
-            statements: Box::new(statements),
-        }
+        Self { statements }
     }
 }
 

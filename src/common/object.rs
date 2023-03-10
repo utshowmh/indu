@@ -10,9 +10,9 @@ pub(crate) enum Object {
 impl Object {
     pub(crate) fn is_truthy(&self) -> bool {
         match self {
-            Object::String(string) => string.len() != 0,
+            Object::String(string) => !string.is_empty(),
             Object::Number(number) => number != &0.,
-            Object::Boolean(boolean) => boolean.clone(),
+            Object::Boolean(boolean) => *boolean,
             Object::Nil => false,
         }
     }
@@ -21,9 +21,9 @@ impl Object {
 impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Number(value) => write!(f, "{}", value),
-            Self::String(value) => write!(f, "{}", value),
-            Self::Boolean(value) => write!(f, "{}", value),
+            Self::Number(value) => write!(f, "{value}"),
+            Self::String(value) => write!(f, "{value}"),
+            Self::Boolean(value) => write!(f, "{value}"),
             Self::Nil => write!(f, "nil"),
         }
     }

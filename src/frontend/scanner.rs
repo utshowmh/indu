@@ -278,7 +278,7 @@ impl Scanner {
                         )))
                     } else {
                         Err(self
-                            .generate_error(format!("Could not convert `{}` to `Number`", lexeme)))
+                            .generate_error(format!("Could not convert `{lexeme}` to `Number`")))
                     }
                 } else if current_char == '"' {
                     while self.current_charecter() != '"' && self.index_in_bound() {
@@ -303,7 +303,7 @@ impl Scanner {
                         )))
                     }
                 } else {
-                    Err(self.generate_error(format!("Unrecognized charecter `{}`", current_char)))
+                    Err(self.generate_error(format!("Unrecognized charecter `{current_char}`")))
                 }
             }
         }
