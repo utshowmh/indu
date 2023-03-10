@@ -34,6 +34,7 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<Statement, Error> {
         match self.current_token().kind {
             TokenKind::If => self.parse_if_statement(),
+            TokenKind::For => self.parse_for_statement(),
             TokenKind::While => self.parse_while_statement(),
             TokenKind::OpenBrace => self.parse_block_statement(),
             TokenKind::Var => self.parse_var_statement(),
@@ -59,6 +60,33 @@ impl Parser {
         } else {
             Ok(Statement::If(IfStatement::new(condition, then_block, None)))
         }
+    }
+
+    fn parse_for_statement(&mut self) -> Result<Statement, Error> {
+        self.advance_current_index();
+        self.consume_token(TokenKind::OpenParen)?;
+        let variable_initialization = self.parse_var_statement()?;
+
+        let condition = self.parse_expression()?;
+        self.consume_token(TokenKind::Semicolon)?;
+
+        let step_expression = self.parse_expression()?;
+        self.consume_token(TokenKind::CloseParen)?;
+
+        let do_block = self.parse_block_statement()?;
+
+        let while_statement = Statement::While(WhileStatement::new(
+            condition,
+            Statement::Block(BlockStatement::new(vec![
+                do_block,
+                Statement::Expression(ExpressionStatement::new(step_expression)),
+            ])),
+        ));
+
+        Ok(Statement::Block(BlockStatement::new(vec![
+            variable_initialization,
+            while_statement,
+        ])))
     }
 
     fn parse_while_statement(&mut self) -> Result<Statement, Error> {
