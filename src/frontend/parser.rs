@@ -312,9 +312,9 @@ impl Parser {
             Ok(self.next_token())
         } else {
             Err(self.generate_error(format!(
-                "Unexpected token`{}`, expected `{}`",
+                "Unexpected token; expected `{}`, got `{}`",
+                kind,
                 self.current_token().lexeme,
-                kind
             )))
         }
     }

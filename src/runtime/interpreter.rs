@@ -79,7 +79,7 @@ impl Interpreter {
             .environment
             .enclosing
             .clone()
-            .unwrap_or(Environment::new(None));
+            .unwrap_or(Environment::new(None)); // Since we're not passing None as enclosing in this function, we'll (hopefully) not hit this.
 
         Ok(())
     }
@@ -148,6 +148,12 @@ impl Interpreter {
                 (Object::String(left_value), Object::String(right_value)) => {
                     Ok(Object::String(format!("{left_value}{right_value}")))
                 }
+                (Object::String(left_value), Object::Number(right_value)) => {
+                    Ok(Object::String(format!("{left_value}{right_value}")))
+                }
+                (Object::Number(left_value), Object::String(right_value)) => {
+                    Ok(Object::String(format!("{left_value}{right_value}")))
+                }
                 (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
@@ -171,6 +177,13 @@ impl Interpreter {
             TokenKind::Star => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Number(left_value * right_value))
+                }
+                (Object::String(left_value), Object::Number(right_value)) => {
+                    let mut string = String::new();
+                    for _ in 0..*right_value as usize {
+                        string.push_str(&left_value);
+                    }
+                    Ok(Object::String(string))
                 }
                 (_, _) => Err(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
