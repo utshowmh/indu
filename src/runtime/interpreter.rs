@@ -1,8 +1,8 @@
 use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
-        ExpressionStatement, GroupExpression, IfStatement, LiteralExpression, PrintStatement,
-        Statement, UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
+        ExpressionStatement, GroupExpression, IfStatement, LiteralExpression, Statement,
+        UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     object::Object,
@@ -42,7 +42,6 @@ impl Interpreter {
                 Environment::new(Some(self.environment.clone())),
             ),
             Statement::Variable(statement) => self.execute_variable_statement(statement),
-            Statement::Print(statement) => self.execute_print_statement(statement),
             Statement::Expression(statement) => self.execute_expression_statement(statement),
         }
     }
@@ -92,13 +91,6 @@ impl Interpreter {
             None => Object::Nil,
         };
         self.environment.define(statement.identifier, value);
-
-        Ok(())
-    }
-
-    fn execute_print_statement(&mut self, statement: PrintStatement) -> Result<(), Error> {
-        let value = self.evaluate_expression(statement.expression)?;
-        println!("{value}");
 
         Ok(())
     }

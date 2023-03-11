@@ -6,7 +6,6 @@ pub(crate) enum Statement {
     While(WhileStatement),
     Block(BlockStatement),
     Variable(VariableStatement),
-    Print(PrintStatement),
     Expression(ExpressionStatement),
 }
 
@@ -69,17 +68,6 @@ impl VariableStatement {
             identifier,
             initializer,
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct PrintStatement {
-    pub(crate) expression: Expression,
-}
-
-impl PrintStatement {
-    pub(crate) fn new(expression: Expression) -> Self {
-        Self { expression }
     }
 }
 
@@ -242,9 +230,7 @@ pub(crate) struct VariableExpression {
 
 impl VariableExpression {
     pub(crate) fn new(identifier: Token) -> Self {
-        Self {
-            identifier,
-        }
+        Self { identifier }
     }
 
     fn position(&self) -> Position {

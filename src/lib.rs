@@ -87,12 +87,9 @@ fn run_repl() -> Result<(), Error> {
                     println!("Exiting Indu REPL.");
                     break;
                 }
-                _ => Error::new(
-                    ErrorKind::SystemError,
-                    "Could not read line from stdin".to_string(),
-                    None,
-                )
-                .report(),
+                _ => {
+                    Error::new(ErrorKind::SystemError, "Unknown command".to_string(), None).report()
+                }
             }
 
             continue;

@@ -1,8 +1,8 @@
 use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
-        ExpressionStatement, GroupExpression, IfStatement, LiteralExpression, PrintStatement,
-        Statement, UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
+        ExpressionStatement, GroupExpression, IfStatement, LiteralExpression, Statement,
+        UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -38,7 +38,6 @@ impl Parser {
             TokenKind::While => self.parse_while_statement(),
             TokenKind::OpenBrace => self.parse_block_statement(),
             TokenKind::Var => self.parse_var_statement(),
-            TokenKind::Print => self.parse_print_statement(),
             _ => self.parse_expression_statement(),
         }
     }
@@ -125,13 +124,6 @@ impl Parser {
             identifier,
             initializer,
         )))
-    }
-
-    fn parse_print_statement(&mut self) -> Result<Statement, Error> {
-        self.advance_current_index();
-        let expression = self.parse_expression()?;
-        self.consume_token(TokenKind::Semicolon)?;
-        Ok(Statement::Print(PrintStatement::new(expression)))
     }
 
     fn parse_expression_statement(&mut self) -> Result<Statement, Error> {
