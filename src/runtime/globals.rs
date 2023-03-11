@@ -7,7 +7,7 @@ use crate::common::{
 };
 
 use super::{
-    builtins::{Read, Write},
+    builtins::{Read, Write, WriteLine},
     environment::Environment,
 };
 
@@ -23,7 +23,15 @@ pub(super) fn define_global_functions(environment: Environment) -> Environment {
         ),
         Object::Function(Function::new(Rc::new(Write))),
     );
-
+    environment.define(
+        Token::new(
+            TokenKind::Identifier,
+            "writeln".to_string(),
+            None,
+            Position::new(0, 0),
+        ),
+        Object::Function(Function::new(Rc::new(WriteLine))),
+    );
     environment.define(
         Token::new(
             TokenKind::Identifier,

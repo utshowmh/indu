@@ -1,5 +1,5 @@
-use indu::run;
+use indu::start;
 
 fn main() {
-    run()
+    start();
 }

@@ -6,7 +6,6 @@ use std::{
     env::args,
     fs::read_to_string,
     io::{stdin, stdout, Write},
-    process::exit,
 };
 
 use common::error::{Error, ErrorKind};
@@ -22,27 +21,21 @@ const COMMANDS: &str = "\
 #env        ->  shows environment (variable bindings).
 ";
 
-pub fn run() {
-    main().unwrap_or_else(|err| err.report());
+pub fn start() {
+    run().unwrap_or_else(|error| error.report());
 }
 
-fn main() -> Result<(), Error> {
+fn run() -> Result<(), Error> {
     let args: Vec<String> = args().collect();
 
     match args.len() {
-        1 => run_repl()?,
-
-        2 => {
-            let source_path = &args[1];
-            run_file(source_path)?;
-        }
+        1 => run_repl(),
+        2 => run_file(&args[1]),
         _ => {
-            eprintln!("Usage: indu [script]");
-            exit(64);
+            eprintln!("Usage: indu [path_to_source]");
+            Ok(())
         }
     }
-
-    Ok(())
 }
 
 fn run_file(source_path: &str) -> Result<(), Error> {
@@ -75,13 +68,13 @@ fn run_repl() -> Result<(), Error> {
         print!("Indu :> ");
         stdout().flush().or(Err(Error::new(
             ErrorKind::SystemError,
-            format!("Could not flush stdout"),
+            "Could not flush stdout".to_string(),
             None,
         )))?;
         let mut line = String::new();
         stdin().read_line(&mut line).or(Err(Error::new(
             ErrorKind::SystemError,
-            format!("Could not read from stdin"),
+            "Could not read from stdin".to_string(),
             None,
         )))?;
         let line = line.trim();
@@ -96,7 +89,7 @@ fn run_repl() -> Result<(), Error> {
                 }
                 _ => Error::new(
                     ErrorKind::SystemError,
-                    format!("Could not read line from stdin"),
+                    "Could not read line from stdin".to_string(),
                     None,
                 )
                 .report(),

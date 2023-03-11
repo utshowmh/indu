@@ -151,7 +151,7 @@ impl BinaryExpression {
     pub(crate) fn new(left: Expression, operator: Token, right: Expression) -> Self {
         Self {
             left: Box::new(left),
-            operator: operator.clone(),
+            operator,
             right: Box::new(right),
         }
     }
@@ -170,7 +170,7 @@ pub(crate) struct UnaryExpression {
 impl UnaryExpression {
     pub(crate) fn new(operator: Token, right: Expression) -> Self {
         Self {
-            operator: operator.clone(),
+            operator,
             right: Box::new(right),
         }
     }
@@ -243,7 +243,7 @@ pub(crate) struct VariableExpression {
 impl VariableExpression {
     pub(crate) fn new(identifier: Token) -> Self {
         Self {
-            identifier: identifier.clone(),
+            identifier,
         }
     }
 

@@ -16,9 +16,22 @@ impl Callable for Write {
         print!("{}", arguments[0]);
         std::io::Write::flush(&mut stdout()).or(Err(Error::new(
             ErrorKind::SystemError,
-            format!("Could not flush stdout"),
+            "Could not flush stdout".to_string(),
             None,
         )))?;
+        Ok(Object::Nil)
+    }
+}
+
+pub(super) struct WriteLine;
+
+impl Callable for WriteLine {
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(&self, arguments: Vec<Object>) -> Result<Object, Error> {
+        println!("{}", arguments[0]);
         Ok(Object::Nil)
     }
 }
@@ -34,7 +47,7 @@ impl Callable for Read {
         let mut input = String::new();
         stdin().read_line(&mut input).or(Err(Error::new(
             ErrorKind::SystemError,
-            format!("Could not read from stdin"),
+            "Could not read from stdin".to_string(),
             None,
         )))?;
         Ok(Object::String(input.trim().to_string()))
