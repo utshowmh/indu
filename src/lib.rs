@@ -9,6 +9,7 @@ use std::{
     process::exit,
 };
 
+use common::error::{Error, ErrorKind};
 use runtime::environment::Environment;
 
 use crate::{
@@ -22,57 +23,67 @@ const COMMANDS: &str = "\
 ";
 
 pub fn run() {
+    main().unwrap_or_else(|err| err.report());
+}
+
+fn main() -> Result<(), Error> {
     let args: Vec<String> = args().collect();
 
     match args.len() {
-        1 => run_repl(),
+        1 => run_repl()?,
 
         2 => {
             let source_path = &args[1];
-            run_file(source_path);
+            run_file(source_path)?;
         }
         _ => {
             eprintln!("Usage: indu [script]");
             exit(64);
         }
     }
+
+    Ok(())
 }
 
-fn run_file(source_path: &str) {
-    let source = read_to_string(source_path)
-        .unwrap_or_else(|_| panic!("ERROR: Could not read file {source_path}."));
+fn run_file(source_path: &str) -> Result<(), Error> {
+    if let Ok(source) = read_to_string(source_path) {
+        let mut scanner = Scanner::new(&source);
+        let tokens = scanner.scan()?;
 
-    let mut scanner = Scanner::new(&source);
-    let tokens = scanner.scan().unwrap_or_else(|error| {
-        error.report();
-        exit(65);
-    });
+        let mut parser = Parser::new(tokens);
+        let expression = parser.parse()?;
 
-    let mut parser = Parser::new(tokens);
-    let expression = parser.parse().unwrap_or_else(|error| {
-        error.report();
-        exit(65);
-    });
+        let mut interpreter = Interpreter::new(Environment::new(None));
+        interpreter.interpret(expression)?;
 
-    let mut interpreter = Interpreter::new(Environment::new(None));
-    interpreter.interpret(expression).unwrap_or_else(|error| {
-        error.report();
-        exit(65);
-    });
+        Ok(())
+    } else {
+        Err(Error::new(
+            ErrorKind::SystemError,
+            format!("Could not read file `{source_path}`"),
+            None,
+        ))
+    }
 }
 
-fn run_repl() {
+fn run_repl() -> Result<(), Error> {
     println!("Welcome to Indu REPL. Type  `#cmd` to see available commands.\n");
 
     let mut environment = Environment::new(None);
 
     loop {
         print!("Indu :> ");
-        stdout().flush().expect("ERROR: Could not flush stdout.");
+        stdout().flush().or(Err(Error::new(
+            ErrorKind::SystemError,
+            format!("Could not flush stdout"),
+            None,
+        )))?;
         let mut line = String::new();
-        stdin()
-            .read_line(&mut line)
-            .expect("ERROR: Could not read line from stdin.");
+        stdin().read_line(&mut line).or(Err(Error::new(
+            ErrorKind::SystemError,
+            format!("Could not read from stdin"),
+            None,
+        )))?;
         let line = line.trim();
 
         if line.starts_with('#') {
@@ -83,7 +94,12 @@ fn run_repl() {
                     println!("Exiting Indu REPL.");
                     break;
                 }
-                _ => eprintln!("ERROR: Unknown command `{line}`."),
+                _ => Error::new(
+                    ErrorKind::SystemError,
+                    format!("Could not read line from stdin"),
+                    None,
+                )
+                .report(),
             }
 
             continue;
@@ -108,4 +124,6 @@ fn run_repl() {
 
         environment = interpreter.environment.clone();
     }
+
+    Ok(())
 }

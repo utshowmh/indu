@@ -3,8 +3,6 @@ use std::{
     rc::Rc,
 };
 
-use crate::runtime::interpreter::Interpreter;
-
 use super::error::Error;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -18,11 +16,11 @@ pub(crate) enum Object {
 impl Object {
     pub(crate) fn is_truthy(&self) -> bool {
         match self {
-            Object::Function(_) => false,
-            Object::String(string) => !string.is_empty(),
-            Object::Number(number) => number != &0.,
-            Object::Boolean(boolean) => *boolean,
-            Object::Nil => false,
+            Self::Function(_) => false,
+            Self::String(string) => !string.is_empty(),
+            Self::Number(number) => number != &0.,
+            Self::Boolean(boolean) => *boolean,
+            Self::Nil => false,
         }
     }
 }
@@ -30,7 +28,7 @@ impl Object {
 impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Object::Function(_) => write!(f, "<callable>"),
+            Self::Function(_) => write!(f, "<function>"),
             Self::Number(value) => write!(f, "{value}"),
             Self::String(value) => write!(f, "{value}"),
             Self::Boolean(value) => write!(f, "{value}"),
@@ -64,5 +62,5 @@ impl Debug for Function {
 
 pub(crate) trait Callable {
     fn arity(&self) -> usize;
-    fn call(&self, interpreter: &Interpreter, arguments: Vec<Object>) -> Result<Object, Error>;
+    fn call(&self, arguments: Vec<Object>) -> Result<Object, Error>;
 }

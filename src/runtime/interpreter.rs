@@ -328,7 +328,7 @@ impl Interpreter {
 
         if let Object::Function(function) = callee {
             if function.callee.arity() == arguments.len() {
-                function.callee.call(self, arguments)
+                function.callee.call(arguments)
             } else {
                 Err(self.generate_error(
                     format!(
@@ -403,6 +403,6 @@ impl Interpreter {
     }
 
     fn generate_error(&self, message: String, position: Position) -> Error {
-        Error::new(ErrorKind::RuntimeError, message, position)
+        Error::new(ErrorKind::RuntimeError, message, Some(position))
     }
 }

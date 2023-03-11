@@ -362,7 +362,7 @@ impl Scanner {
         Error::new(
             ErrorKind::LexerError,
             message,
-            self.current_position.clone(),
+            Some(self.current_position.clone()),
         )
     }
 }

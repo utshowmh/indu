@@ -38,7 +38,7 @@ impl Environment {
             Err(Error::new(
                 ErrorKind::RuntimeError,
                 format!("Undefined variable. `{}` is not defined", identifier.lexeme),
-                identifier.position,
+                Some(identifier.position),
             ))
         }
     }
@@ -52,7 +52,7 @@ impl Environment {
             Err(Error::new(
                 ErrorKind::RuntimeError,
                 format!("Undefined variable. `{}` is not defined", identifier.lexeme),
-                identifier.position,
+                Some(identifier.position),
             ))
         }
     }

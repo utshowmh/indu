@@ -2,6 +2,7 @@ use super::position::Position;
 
 #[derive(Debug)]
 pub(crate) enum ErrorKind {
+    SystemError,
     LexerError,
     ParserError,
     RuntimeError,
@@ -11,11 +12,11 @@ pub(crate) enum ErrorKind {
 pub(crate) struct Error {
     pub(crate) kind: ErrorKind,
     pub(crate) message: String,
-    pub(crate) position: Position,
+    pub(crate) position: Option<Position>,
 }
 
 impl Error {
-    pub(crate) fn new(kind: ErrorKind, message: String, position: Position) -> Self {
+    pub(crate) fn new(kind: ErrorKind, message: String, position: Option<Position>) -> Self {
         Self {
             kind,
             message,
@@ -24,10 +25,9 @@ impl Error {
     }
 
     pub(crate) fn report(&self) {
-        eprintln!(
-            "[line {}, column {}]",
-            self.position.line, self.position.column,
-        );
+        if let Some(position) = self.position.clone() {
+            eprintln!("[line {}, column {}]", position.line, position.column,);
+        }
         eprintln!("{:?}: {}.", self.kind, self.message,);
     }
 }
