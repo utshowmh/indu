@@ -319,6 +319,7 @@ impl Interpreter {
     }
 
     fn evaluate_call_expression(&mut self, expression: CallExpression) -> Result<Object, Error> {
+        let callee_position = expression.position().clone();
         let callee = self.evaluate_expression(*expression.callee)?;
         let mut arguments = Vec::new();
         for argument in expression.arguments {
@@ -335,11 +336,11 @@ impl Interpreter {
                         function.callee.arity(),
                         arguments.len()
                     ),
-                    Position::new(0, 0),
+                    callee_position,
                 ))
             }
         } else {
-            Err(self.generate_error(format!("`{}` is not callable", callee), Position::new(0, 0)))
+            Err(self.generate_error(format!("`{}` is not callable", callee), callee_position))
         }
     }
 

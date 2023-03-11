@@ -287,7 +287,7 @@ impl Parser {
             TokenKind::Nil,
         ]) {
             Ok(Expression::Literal(LiteralExpression::new(
-                self.next_token().literal,
+                self.next_token(),
             )))
         } else if self.current_token_matches(&[TokenKind::Identifier]) {
             Ok(Expression::Variable(VariableExpression::new(
