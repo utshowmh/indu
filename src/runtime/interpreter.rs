@@ -1,8 +1,8 @@
 use crate::common::{
     ast::{
-        AssignmentExpression, BinaryExpression, BlockStatement, Expression, ExpressionStatement,
-        GroupExpression, IfStatement, LiteralExpression, PrintStatement, Statement,
-        UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
+        AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
+        ExpressionStatement, GroupExpression, IfStatement, LiteralExpression, PrintStatement,
+        Statement, UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     object::Object,
@@ -10,7 +10,7 @@ use crate::common::{
     token::TokenKind,
 };
 
-use super::environment::Environment;
+use super::{environment::Environment, globals::define_global_functions};
 
 pub(crate) struct Interpreter {
     pub(crate) environment: Environment,
@@ -18,7 +18,9 @@ pub(crate) struct Interpreter {
 
 impl Interpreter {
     pub(crate) fn new(environment: Environment) -> Self {
-        Self { environment }
+        Self {
+            environment: define_global_functions(environment),
+        }
     }
 
     pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<(), Error> {
@@ -118,6 +120,7 @@ impl Interpreter {
             Expression::Binary(expression) => self.evaluate_binary_expression(expression),
             Expression::Unary(expression) => self.evaluate_unary_expression(expression),
             Expression::Group(expression) => self.evaluate_group_expression(expression),
+            Expression::Call(expression) => self.evaluate_call_expression(expression),
             Expression::Literal(expression) => self.evaluate_literal_expression(expression),
             Expression::Variable(expression) => self.evaluate_variable_expression(expression),
         }
@@ -181,7 +184,7 @@ impl Interpreter {
                 (Object::String(left_value), Object::Number(right_value)) => {
                     let mut string = String::new();
                     for _ in 0..*right_value as usize {
-                        string.push_str(&left_value);
+                        string.push_str(left_value);
                     }
                     Ok(Object::String(string))
                 }
@@ -313,6 +316,31 @@ impl Interpreter {
 
     fn evaluate_group_expression(&mut self, expression: GroupExpression) -> Result<Object, Error> {
         self.evaluate_expression(*expression.child)
+    }
+
+    fn evaluate_call_expression(&mut self, expression: CallExpression) -> Result<Object, Error> {
+        let callee = self.evaluate_expression(*expression.callee)?;
+        let mut arguments = Vec::new();
+        for argument in expression.arguments {
+            arguments.push(self.evaluate_expression(argument)?);
+        }
+
+        if let Object::Function(function) = callee {
+            if function.callee.arity() == arguments.len() {
+                function.callee.call(self, arguments)
+            } else {
+                Err(self.generate_error(
+                    format!(
+                        "Expected {} arguments, got {}",
+                        function.callee.arity(),
+                        arguments.len()
+                    ),
+                    Position::new(0, 0),
+                ))
+            }
+        } else {
+            Err(self.generate_error(format!("`{}` is not callable", callee), Position::new(0, 0)))
+        }
     }
 
     fn evaluate_literal_expression(&self, expression: LiteralExpression) -> Result<Object, Error> {

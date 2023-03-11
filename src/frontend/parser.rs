@@ -1,8 +1,8 @@
 use crate::common::{
     ast::{
-        AssignmentExpression, BinaryExpression, BlockStatement, Expression, ExpressionStatement,
-        GroupExpression, IfStatement, LiteralExpression, PrintStatement, Statement,
-        UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
+        AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
+        ExpressionStatement, GroupExpression, IfStatement, LiteralExpression, PrintStatement,
+        Statement, UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -246,11 +246,36 @@ impl Parser {
     fn parse_unary_expression(&mut self) -> Result<Expression, Error> {
         if self.current_token_matches(&[TokenKind::Minus, TokenKind::Not]) {
             let operator = self.next_token();
-            let right = self.parse_primary_expression()?;
+            let right = self.parse_call_expression()?;
             Ok(Expression::Unary(UnaryExpression::new(operator, right)))
         } else {
-            self.parse_primary_expression()
+            self.parse_call_expression()
         }
+    }
+
+    fn parse_call_expression(&mut self) -> Result<Expression, Error> {
+        let mut expression = self.parse_primary_expression()?;
+
+        while self.current_token_matches(&[TokenKind::OpenParen]) {
+            self.advance_current_index();
+            let mut arguments = Vec::new();
+
+            if !self.current_token_matches(&[TokenKind::CloseParen]) {
+                loop {
+                    arguments.push(self.parse_expression()?);
+                    if self.current_token_matches(&[TokenKind::Comma]) {
+                        self.advance_current_index();
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            self.consume_token(TokenKind::CloseParen)?;
+            expression = Expression::Call(CallExpression::new(expression, arguments));
+        }
+
+        Ok(expression)
     }
 
     fn parse_primary_expression(&mut self) -> Result<Expression, Error> {

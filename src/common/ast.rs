@@ -100,6 +100,7 @@ pub(crate) enum Expression {
     Binary(BinaryExpression),
     Unary(UnaryExpression),
     Group(GroupExpression),
+    Call(CallExpression),
     Literal(LiteralExpression),
     Variable(VariableExpression),
 }
@@ -160,6 +161,21 @@ impl GroupExpression {
     pub(crate) fn new(child: Expression) -> Self {
         Self {
             child: Box::new(child),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct CallExpression {
+    pub(crate) callee: Box<Expression>,
+    pub(crate) arguments: Vec<Expression>,
+}
+
+impl CallExpression {
+    pub(crate) fn new(callee: Expression, arguments: Vec<Expression>) -> Self {
+        Self {
+            callee: Box::new(callee),
+            arguments,
         }
     }
 }

@@ -1,5 +1,5 @@
 # Indu
 
-![Indu](./assets/indu.png)
+![Indu](./assets/indu.ico)
 
 ## The Indu Programming Language
