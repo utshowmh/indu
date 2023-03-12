@@ -1,0 +1,44 @@
+{
+	"name": "indu-language",
+	"displayName": "Indu Syntax Highlighter",
+	"description": "Syntax highlighting for Indu programming language",
+	"version": "0.0.1",
+	"publisher": "M H Utsho",
+	"author": "M H Utsho",
+	"icon": "images/indu.png",
+	"engines": {
+		"vscode": "^1.24.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"contributes": {
+		"languages": [
+			{
+				"id": "indu",
+				"aliases": [
+					"indu"
+				],
+				"extensions": [
+					".indu", ".in"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "indu",
+				"scopeName": "source.indu",
+				"path": "./syntaxes/indu.tmLanguage.json"
+			}
+		]
+	},
+	"keywords": [
+		"indu",
+		"indu-language",
+		"vscode",
+		"vscode-extension",
+		"vscode-language"
+	],
+	"license": "MIT"
+}
