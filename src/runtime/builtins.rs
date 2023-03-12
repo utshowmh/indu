@@ -50,6 +50,11 @@ impl Callable for Read {
             "Could not read from stdin".to_string(),
             None,
         )))?;
-        Ok(Object::String(input.trim().to_string()))
+        let input = input.trim().to_string();
+        if let Ok(number) = input.parse() {
+            Ok(Object::Number(number))
+        } else {
+            Ok(Object::String(input))
+        }
     }
 }

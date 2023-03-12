@@ -50,12 +50,21 @@ impl Parser {
         let then_block = self.parse_block_statement()?;
         if self.current_token_matches(&[TokenKind::Else]) {
             self.advance_current_index();
-            let else_block = self.parse_block_statement()?;
-            Ok(Statement::If(IfStatement::new(
-                condition,
-                then_block,
-                Some(else_block),
-            )))
+            if self.current_token_matches(&[TokenKind::If]) {
+                let else_block = self.parse_if_statement()?;
+                Ok(Statement::If(IfStatement::new(
+                    condition,
+                    then_block,
+                    Some(else_block),
+                )))
+            } else {
+                let else_block = self.parse_block_statement()?;
+                Ok(Statement::If(IfStatement::new(
+                    condition,
+                    then_block,
+                    Some(else_block),
+                )))
+            }
         } else {
             Ok(Statement::If(IfStatement::new(condition, then_block, None)))
         }

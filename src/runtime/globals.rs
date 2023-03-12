@@ -21,7 +21,7 @@ pub(super) fn define_global_functions(environment: Environment) -> Environment {
             None,
             Position::new(0, 0),
         ),
-        Object::Function(Function::new(Rc::new(Write))),
+        Object::Function(Function::new("write".to_string(), Rc::new(Write))),
     );
     environment.define(
         Token::new(
@@ -30,7 +30,7 @@ pub(super) fn define_global_functions(environment: Environment) -> Environment {
             None,
             Position::new(0, 0),
         ),
-        Object::Function(Function::new(Rc::new(WriteLine))),
+        Object::Function(Function::new("writeln".to_string(), Rc::new(WriteLine))),
     );
     environment.define(
         Token::new(
@@ -39,7 +39,7 @@ pub(super) fn define_global_functions(environment: Environment) -> Environment {
             None,
             Position::new(0, 0),
         ),
-        Object::Function(Function::new(Rc::new(Read))),
+        Object::Function(Function::new("read".to_string(), Rc::new(Read))),
     );
 
     environment.clone()

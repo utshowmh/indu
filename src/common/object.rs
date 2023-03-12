@@ -13,6 +13,7 @@ pub(crate) enum Object {
     Boolean(bool),
     Nil,
 }
+
 impl Object {
     pub(crate) fn is_truthy(&self) -> bool {
         match self {
@@ -28,7 +29,7 @@ impl Object {
 impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Function(_) => write!(f, "<function>"),
+            Self::Function(function) => write!(f, "<function({})>", function.identifier),
             Self::Number(value) => write!(f, "{value}"),
             Self::String(value) => write!(f, "{value}"),
             Self::Boolean(value) => write!(f, "{value}"),
@@ -39,12 +40,13 @@ impl Display for Object {
 
 #[derive(Clone)]
 pub(crate) struct Function {
+    pub(crate) identifier: String,
     pub(crate) callee: Rc<dyn Callable>,
 }
 
 impl Function {
-    pub(crate) fn new(callee: Rc<dyn Callable>) -> Self {
-        Self { callee }
+    pub(crate) fn new(identifier: String, callee: Rc<dyn Callable>) -> Self {
+        Self { identifier, callee }
     }
 }
 
@@ -56,7 +58,7 @@ impl PartialEq for Function {
 
 impl Debug for Function {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "<callable>")
+        write!(f, "<function({})>", self.identifier)
     }
 }
 
