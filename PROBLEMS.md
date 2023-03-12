@@ -1,4 +1,4 @@
 # PROBLEMS
 
-- **BUGS:**
-  - Variable assignment doesn't work as expected in nested block statements.
+- **TODO:**
+  - Drop `block variables` after end of `block`.

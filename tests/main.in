@@ -1,3 +1,11 @@
-write("your name: ");
-var a = read();
-writeln("hello, " + a + "!");
+var i = 0;
+
+{
+    {
+        i = i + 5;
+        writeln("i is " + i);
+    }
+}
+
+i;
+writeln("i is " + i);

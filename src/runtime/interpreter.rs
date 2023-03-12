@@ -37,10 +37,7 @@ impl Interpreter {
         match statement {
             Statement::If(statement) => self.execute_if_statement(statement),
             Statement::While(statement) => self.execute_while_statement(statement),
-            Statement::Block(statement) => self.execute_block_statement(
-                statement,
-                Environment::new(Some(self.environment.clone())),
-            ),
+            Statement::Block(statement) => self.execute_block_statement(statement),
             Statement::Variable(statement) => self.execute_variable_statement(statement),
             Statement::Expression(statement) => self.execute_expression_statement(statement),
         }
@@ -67,21 +64,10 @@ impl Interpreter {
         Ok(())
     }
 
-    fn execute_block_statement(
-        &mut self,
-        statement: BlockStatement,
-        environment: Environment,
-    ) -> Result<(), Error> {
-        self.environment = environment;
+    fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<(), Error> {
         for statement in statement.statements {
             self.execute_statement(statement)?;
         }
-        self.environment = self
-            .environment
-            .enclosing
-            .clone()
-            .unwrap_or(Environment::new(None)); // Since we're not passing None as enclosing in this function, we'll (hopefully) not hit this.
-
         Ok(())
     }
 
