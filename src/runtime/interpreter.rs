@@ -64,9 +64,13 @@ impl Interpreter {
     fn execute_if_statement(&mut self, statement: IfStatement) -> Result<State, Error> {
         let condition = self.evaluate_expression(statement.condition)?;
         if condition.is_truthy() {
-            self.execute_statement(*statement.then_block)?;
+            if let State::Return(object) = self.execute_statement(*statement.then_block)? {
+                return Ok(State::Return(object));
+            }
         } else if let Some(else_block) = *statement.else_block {
-            self.execute_statement(else_block)?;
+            if let State::Return(object) = self.execute_statement(else_block)? {
+                return Ok(State::Return(object));
+            }
         }
 
         Ok(State::Normal)
