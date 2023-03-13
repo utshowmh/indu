@@ -1,28 +1,5 @@
-var secret_number = 69;
-var chances = 5;
-var guess;
-
-writeln(
-    "Welcome to indu guessing game. You have " 
-    + chances 
-    + " to guess a secret number that's in range of 1 to 100."
-);
-
-while (chances > 0 and guess != secret_number) {
-    write("Enter a guess: ");
-    guess = read();
-
-    if (guess > secret_number) {
-        writeln("Your guess is too high!");
-    } else if (guess < secret_number) {
-        writeln("Your guess is too low!");
-    }
-
-    chances = chances - 1;
+fun greet(greeting, name) {
+    writeln(greeting + ", " + name + "\n");
 }
 
-if  (chances == 0 and guess != secret_number) {
-    writeln("You have no chance left. You lost!");
-}  else {
-    writeln("Congrats! You guessed it.");
-}
+greet("hello", "world");

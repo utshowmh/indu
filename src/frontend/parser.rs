@@ -1,8 +1,8 @@
 use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
-        ExpressionStatement, GroupExpression, IfStatement, LiteralExpression, Statement,
-        UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
+        ExpressionStatement, FunctionStatement, GroupExpression, IfStatement, LiteralExpression,
+        Statement, UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -33,6 +33,7 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
         match self.current_token().kind {
+            TokenKind::Fun => self.parse_function_statement(),
             TokenKind::If => self.parse_if_statement(),
             TokenKind::For => self.parse_for_statement(),
             TokenKind::While => self.parse_while_statement(),
@@ -42,14 +43,37 @@ impl Parser {
         }
     }
 
+    fn parse_function_statement(&mut self) -> Result<Statement, Error> {
+        self.consume_token(TokenKind::Fun)?;
+        let name = self.consume_token(TokenKind::Identifier)?;
+        self.consume_token(TokenKind::OpenParen)?;
+        let mut parameters = Vec::new();
+        if !self.current_token_matches(&[TokenKind::CloseParen]) {
+            loop {
+                parameters.push(self.consume_token(TokenKind::Identifier)?);
+                if self.current_token_matches(&[TokenKind::Comma]) {
+                    self.consume_token(TokenKind::Comma)?;
+                } else {
+                    break;
+                }
+            }
+        }
+        self.consume_token(TokenKind::CloseParen)?;
+        let block = self.parse_block_statement()?;
+
+        Ok(Statement::Function(FunctionStatement::new(
+            name, parameters, block,
+        )))
+    }
+
     fn parse_if_statement(&mut self) -> Result<Statement, Error> {
-        self.advance_current_index();
+        self.consume_token(TokenKind::If)?;
         self.consume_token(TokenKind::OpenParen)?;
         let condition = self.parse_expression()?;
         self.consume_token(TokenKind::CloseParen)?;
         let then_block = self.parse_block_statement()?;
         if self.current_token_matches(&[TokenKind::Else]) {
-            self.advance_current_index();
+            self.consume_token(TokenKind::Else)?;
             if self.current_token_matches(&[TokenKind::If]) {
                 let else_block = self.parse_if_statement()?;
                 Ok(Statement::If(IfStatement::new(
@@ -71,18 +95,14 @@ impl Parser {
     }
 
     fn parse_for_statement(&mut self) -> Result<Statement, Error> {
-        self.advance_current_index();
+        self.consume_token(TokenKind::For)?;
         self.consume_token(TokenKind::OpenParen)?;
         let variable_initialization = self.parse_var_statement()?;
-
         let condition = self.parse_expression()?;
         self.consume_token(TokenKind::Semicolon)?;
-
         let step_expression = self.parse_expression()?;
         self.consume_token(TokenKind::CloseParen)?;
-
         let do_block = self.parse_block_statement()?;
-
         let while_statement = Statement::While(WhileStatement::new(
             condition,
             Statement::Block(BlockStatement::new(vec![
@@ -98,7 +118,7 @@ impl Parser {
     }
 
     fn parse_while_statement(&mut self) -> Result<Statement, Error> {
-        self.advance_current_index();
+        self.consume_token(TokenKind::While)?;
         self.consume_token(TokenKind::OpenParen)?;
         let condition = self.parse_expression()?;
         self.consume_token(TokenKind::CloseParen)?;
@@ -108,7 +128,7 @@ impl Parser {
     }
 
     fn parse_block_statement(&mut self) -> Result<Statement, Error> {
-        self.advance_current_index();
+        self.consume_token(TokenKind::OpenBrace)?;
         let mut statements = Vec::new();
         while !self.current_token_matches(&[TokenKind::CloseBrace]) && !self.current_token_is_eof()
         {
@@ -120,11 +140,11 @@ impl Parser {
     }
 
     fn parse_var_statement(&mut self) -> Result<Statement, Error> {
-        self.advance_current_index();
+        self.consume_token(TokenKind::Var)?;
         let identifier = self.consume_token(TokenKind::Identifier)?;
         let mut initializer = None;
         if self.current_token_matches(&[TokenKind::Assign]) {
-            self.advance_current_index();
+            self.consume_token(TokenKind::Assign)?;
             initializer = Some(self.parse_expression()?);
         }
         self.consume_token(TokenKind::Semicolon)?;
@@ -150,7 +170,7 @@ impl Parser {
         let expression = self.parse_binary_expression()?;
 
         if self.current_token_matches(&[TokenKind::Assign]) {
-            self.advance_current_index();
+            self.consume_token(TokenKind::Assign)?;
             let initializer = self.parse_assignment_expression()?;
             if let Expression::Variable(expression) = expression {
                 return Ok(Expression::Assignment(AssignmentExpression::new(
@@ -258,14 +278,14 @@ impl Parser {
         let mut expression = self.parse_primary_expression()?;
 
         while self.current_token_matches(&[TokenKind::OpenParen]) {
-            self.advance_current_index();
+            self.consume_token(TokenKind::OpenParen)?;
             let mut arguments = Vec::new();
 
             if !self.current_token_matches(&[TokenKind::CloseParen]) {
                 loop {
                     arguments.push(self.parse_expression()?);
                     if self.current_token_matches(&[TokenKind::Comma]) {
-                        self.advance_current_index();
+                        self.consume_token(TokenKind::Comma)?;
                     } else {
                         break;
                     }
@@ -295,7 +315,7 @@ impl Parser {
                 self.next_token(),
             )))
         } else if self.current_token_matches(&[TokenKind::OpenParen]) {
-            self.advance_current_index();
+            self.consume_token(TokenKind::OpenParen)?;
             let child = self.parse_expression()?;
             self.consume_token(TokenKind::CloseParen)?;
             Ok(Expression::Group(GroupExpression::new(child)))

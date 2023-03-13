@@ -2,6 +2,7 @@ use super::{object::Object, position::Position, token::Token};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Statement {
+    Function(FunctionStatement),
     If(IfStatement),
     While(WhileStatement),
     Block(BlockStatement),
@@ -20,6 +21,23 @@ impl WhileStatement {
         Self {
             condition,
             do_block: Box::new(do_block),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct FunctionStatement {
+    pub(crate) name: Token,
+    pub(crate) parameters: Vec<Token>,
+    pub(crate) block: Box<Statement>,
+}
+
+impl FunctionStatement {
+    pub(crate) fn new(name: Token, parameters: Vec<Token>, block: Statement) -> Self {
+        Self {
+            name,
+            parameters,
+            block: Box::new(block),
         }
     }
 }
