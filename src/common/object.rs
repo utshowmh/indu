@@ -3,7 +3,9 @@ use std::{
     rc::Rc,
 };
 
-use super::error::Error;
+use crate::runtime::interpreter::Interpreter;
+
+use super::{ast::FunctionStatement, error::Error};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Object {
@@ -58,5 +60,29 @@ impl Debug for Function {
 
 pub(crate) trait Callable {
     fn arity(&self) -> usize;
-    fn call(&self, arguments: Vec<Object>) -> Result<Object, Error>;
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, Error>;
+}
+
+pub(crate) struct UserDefinedFunction {
+    pub(crate) statement: FunctionStatement,
+}
+
+impl UserDefinedFunction {
+    pub(crate) fn new(statement: FunctionStatement) -> Self {
+        Self { statement }
+    }
+}
+
+impl Callable for UserDefinedFunction {
+    fn arity(&self) -> usize {
+        self.statement.parameters.len()
+    }
+
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, Error> {
+        for (identifier, value) in self.statement.parameters.iter().zip(arguments) {
+            interpreter.environment.define(identifier.clone(), value)
+        }
+        interpreter.execute_statement(*self.statement.block.clone())?;
+        Ok(Object::Nil)
+    }
 }

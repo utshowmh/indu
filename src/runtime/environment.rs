@@ -21,7 +21,7 @@ impl Environment {
         }
     }
 
-    pub(super) fn define(&mut self, identifier: Token, value: Object) {
+    pub(crate) fn define(&mut self, identifier: Token, value: Object) {
         self.bindings.insert(identifier.lexeme, value);
     }
 

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
@@ -5,7 +7,7 @@ use crate::common::{
         Statement, UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
-    object::Object,
+    object::{Function, Object, UserDefinedFunction},
     position::Position,
     token::TokenKind,
 };
@@ -33,7 +35,7 @@ impl Interpreter {
 }
 
 impl Interpreter {
-    fn execute_statement(&mut self, statement: Statement) -> Result<(), Error> {
+    pub(crate) fn execute_statement(&mut self, statement: Statement) -> Result<(), Error> {
         match statement {
             Statement::Function(statement) => self.execute_function_statement(statement),
             Statement::If(statement) => self.execute_if_statement(statement),
@@ -44,8 +46,16 @@ impl Interpreter {
         }
     }
 
-    fn execute_function_statement(&self, _statement: FunctionStatement) -> Result<(), Error> {
-        todo!()
+    fn execute_function_statement(&mut self, statement: FunctionStatement) -> Result<(), Error> {
+        self.environment.define(
+            statement.name.clone(),
+            Object::Function(Function::new(
+                statement.name.lexeme.clone(),
+                Rc::new(UserDefinedFunction::new(statement)),
+            )),
+        );
+
+        Ok(())
     }
 
     fn execute_if_statement(&mut self, statement: IfStatement) -> Result<(), Error> {
@@ -337,7 +347,7 @@ impl Interpreter {
 
         if let Object::Function(function) = callee {
             if function.callee.arity() == arguments.len() {
-                function.callee.call(arguments)
+                function.callee.call(self, arguments)
             } else {
                 Err(self.generate_error(
                     format!(

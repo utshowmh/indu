@@ -1,5 +1,5 @@
 fun greet(greeting, name) {
-    writeln(greeting + ", " + name + "\n");
+    writeln(greeting + ", " + name + "!");
 }
 
 greet("hello", "world");
