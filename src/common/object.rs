@@ -5,7 +5,7 @@ use std::{
 
 use crate::runtime::interpreter::Interpreter;
 
-use super::{ast::FunctionStatement, error::Error};
+use super::{ast::FunctionStatement, error::Error, state::State};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Object {
@@ -82,7 +82,12 @@ impl Callable for UserDefinedFunction {
         for (identifier, value) in self.statement.parameters.iter().zip(arguments) {
             interpreter.environment.define(identifier.clone(), value)
         }
-        interpreter.execute_statement(*self.statement.block.clone())?;
-        Ok(Object::Nil)
+        if let State::Return(object) =
+            interpreter.execute_statement(*self.statement.block.clone())?
+        {
+            Ok(object)
+        } else {
+            Ok(Object::Nil)
+        }
     }
 }

@@ -12,6 +12,7 @@ use common::error::{Error, ErrorKind};
 use runtime::environment::Environment;
 
 use crate::{
+    common::state::State,
     frontend::{parser::Parser, scanner::Scanner},
     runtime::interpreter::Interpreter,
 };
@@ -110,6 +111,7 @@ fn run_repl() -> Result<(), Error> {
         let mut interpreter = Interpreter::new(environment.clone());
         interpreter.interpret(expression).unwrap_or_else(|error| {
             error.report();
+            State::Normal
         });
 
         environment = interpreter.environment.clone();

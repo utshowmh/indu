@@ -4,11 +4,13 @@ use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
         ExpressionStatement, FunctionStatement, GroupExpression, IfStatement, LiteralExpression,
-        Statement, UnaryExpression, VariableExpression, VariableStatement, WhileStatement,
+        ReturnStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
+        WhileStatement,
     },
     error::{Error, ErrorKind},
     object::{Function, Object, UserDefinedFunction},
     position::Position,
+    state::State,
     token::TokenKind,
 };
 
@@ -25,28 +27,29 @@ impl Interpreter {
         }
     }
 
-    pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<(), Error> {
+    pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<State, Error> {
         for statement in statements {
             self.execute_statement(statement)?;
         }
 
-        Ok(())
+        Ok(State::Normal)
     }
 }
 
 impl Interpreter {
-    pub(crate) fn execute_statement(&mut self, statement: Statement) -> Result<(), Error> {
+    pub(crate) fn execute_statement(&mut self, statement: Statement) -> Result<State, Error> {
         match statement {
             Statement::Function(statement) => self.execute_function_statement(statement),
             Statement::If(statement) => self.execute_if_statement(statement),
             Statement::While(statement) => self.execute_while_statement(statement),
             Statement::Block(statement) => self.execute_block_statement(statement),
             Statement::Variable(statement) => self.execute_variable_statement(statement),
+            Statement::Return(statement) => self.execute_return_statement(statement),
             Statement::Expression(statement) => self.execute_expression_statement(statement),
         }
     }
 
-    fn execute_function_statement(&mut self, statement: FunctionStatement) -> Result<(), Error> {
+    fn execute_function_statement(&mut self, statement: FunctionStatement) -> Result<State, Error> {
         self.environment.define(
             statement.identifier.clone(),
             Object::Function(Function::new(
@@ -55,10 +58,10 @@ impl Interpreter {
             )),
         );
 
-        Ok(())
+        Ok(State::Normal)
     }
 
-    fn execute_if_statement(&mut self, statement: IfStatement) -> Result<(), Error> {
+    fn execute_if_statement(&mut self, statement: IfStatement) -> Result<State, Error> {
         let condition = self.evaluate_expression(statement.condition)?;
         if condition.is_truthy() {
             self.execute_statement(*statement.then_block)?;
@@ -66,43 +69,52 @@ impl Interpreter {
             self.execute_statement(else_block)?;
         }
 
-        Ok(())
+        Ok(State::Normal)
     }
 
-    fn execute_while_statement(&mut self, statement: WhileStatement) -> Result<(), Error> {
+    fn execute_while_statement(&mut self, statement: WhileStatement) -> Result<State, Error> {
         let mut condition = self.evaluate_expression(statement.condition.clone())?;
         while condition.is_truthy() {
-            self.execute_statement(*statement.do_block.clone())?;
+            if let State::Return(object) = self.execute_statement(*statement.do_block.clone())? {
+                return Ok(State::Return(object));
+            }
             condition = self.evaluate_expression(statement.condition.clone())?;
         }
 
-        Ok(())
+        Ok(State::Normal)
     }
 
-    fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<(), Error> {
+    fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<State, Error> {
         for statement in statement.statements {
-            self.execute_statement(statement)?;
+            if let State::Return(object) = self.execute_statement(statement)? {
+                return Ok(State::Return(object));
+            }
         }
-        Ok(())
+        Ok(State::Normal)
     }
 
-    fn execute_variable_statement(&mut self, statement: VariableStatement) -> Result<(), Error> {
+    fn execute_variable_statement(&mut self, statement: VariableStatement) -> Result<State, Error> {
         let value = match statement.initializer {
             Some(expression) => self.evaluate_expression(expression)?,
             None => Object::Nil,
         };
         self.environment.define(statement.identifier, value);
 
-        Ok(())
+        Ok(State::Normal)
+    }
+
+    fn execute_return_statement(&mut self, statement: ReturnStatement) -> Result<State, Error> {
+        let value = self.evaluate_expression(statement.expression)?;
+        Ok(State::Return(value))
     }
 
     fn execute_expression_statement(
         &mut self,
         statement: ExpressionStatement,
-    ) -> Result<(), Error> {
+    ) -> Result<State, Error> {
         self.evaluate_expression(statement.expression)?;
 
-        Ok(())
+        Ok(State::Normal)
     }
 }
 

@@ -7,6 +7,7 @@ pub(crate) enum Statement {
     While(WhileStatement),
     Block(BlockStatement),
     Variable(VariableStatement),
+    Return(ReturnStatement),
     Expression(ExpressionStatement),
 }
 
@@ -86,6 +87,17 @@ impl VariableStatement {
             identifier,
             initializer,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ReturnStatement {
+    pub(crate) expression: Expression,
+}
+
+impl ReturnStatement {
+    pub(crate) fn new(expression: Expression) -> Self {
+        Self { expression }
     }
 }
 
