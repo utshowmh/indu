@@ -191,9 +191,35 @@ impl Interpreter {
                 )),
             },
 
-            TokenKind::Equal => Ok(Object::Boolean(left_value == right_value)),
+            TokenKind::Equal => match (&left_value, &right_value) {
+                (Object::String(left), Object::String(right)) => Ok(Object::Boolean(left == right)),
+                (Object::Number(left), Object::Number(right)) => Ok(Object::Boolean(left == right)),
+                (Object::Boolean(left), Object::Boolean(right)) => {
+                    Ok(Object::Boolean(left == right))
+                }
+                (Object::Nil, Object::Nil) => Ok(Object::Boolean(true)),
+                _ => Err(self.generate_invalid_binary_operation_error(
+                    &expression.operator.lexeme,
+                    left_value,
+                    right_value,
+                    expression.operator.position,
+                )),
+            },
 
-            TokenKind::NotEqual => Ok(Object::Boolean(left_value != right_value)),
+            TokenKind::NotEqual => match (&left_value, &right_value) {
+                (Object::String(left), Object::String(right)) => Ok(Object::Boolean(left != right)),
+                (Object::Number(left), Object::Number(right)) => Ok(Object::Boolean(left != right)),
+                (Object::Boolean(left), Object::Boolean(right)) => {
+                    Ok(Object::Boolean(left != right))
+                }
+                (Object::Nil, Object::Nil) => Ok(Object::Boolean(true)),
+                _ => Err(self.generate_invalid_binary_operation_error(
+                    &expression.operator.lexeme,
+                    left_value,
+                    right_value,
+                    expression.operator.position,
+                )),
+            },
 
             TokenKind::Greater => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {

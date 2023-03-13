@@ -5,7 +5,7 @@ use std::{
 
 use super::error::Error;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub(crate) enum Object {
     Function(Function),
     String(String),
@@ -47,12 +47,6 @@ pub(crate) struct Function {
 impl Function {
     pub(crate) fn new(identifier: String, callee: Rc<dyn Callable>) -> Self {
         Self { identifier, callee }
-    }
-}
-
-impl PartialEq for Function {
-    fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.callee, &other.callee)
     }
 }
 

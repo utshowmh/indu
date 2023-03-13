@@ -96,7 +96,7 @@ impl Display for TokenKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub(crate) struct Token {
     pub(crate) kind: TokenKind,
     pub(crate) lexeme: String,
