@@ -40,10 +40,6 @@
 					"match": "\\b(true|false)\\b"
 				},
 				{
-					"name": "support.function.builtin.indu",
-					"match": "\\b(read|write|writeln)\\b"
-				},
-				{
 					"name": "variable.language.this.indu",
 					"match": "\\b(this)\\b"
 				},
