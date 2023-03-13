@@ -45,7 +45,7 @@ impl Parser {
 
     fn parse_function_statement(&mut self) -> Result<Statement, Error> {
         self.consume_token(TokenKind::Fun)?;
-        let name = self.consume_token(TokenKind::Identifier)?;
+        let identifier = self.consume_token(TokenKind::Identifier)?;
         self.consume_token(TokenKind::OpenParen)?;
         let mut parameters = Vec::new();
         if !self.current_token_matches(&[TokenKind::CloseParen]) {
@@ -62,7 +62,7 @@ impl Parser {
         let block = self.parse_block_statement()?;
 
         Ok(Statement::Function(FunctionStatement::new(
-            name, parameters, block,
+            identifier, parameters, block,
         )))
     }
 

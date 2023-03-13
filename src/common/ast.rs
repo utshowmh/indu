@@ -27,15 +27,15 @@ impl WhileStatement {
 
 #[derive(Debug, Clone)]
 pub(crate) struct FunctionStatement {
-    pub(crate) name: Token,
+    pub(crate) identifier: Token,
     pub(crate) parameters: Vec<Token>,
     pub(crate) block: Box<Statement>,
 }
 
 impl FunctionStatement {
-    pub(crate) fn new(name: Token, parameters: Vec<Token>, block: Statement) -> Self {
+    pub(crate) fn new(identifier: Token, parameters: Vec<Token>, block: Statement) -> Self {
         Self {
-            name,
+            identifier,
             parameters,
             block: Box::new(block),
         }

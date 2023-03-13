@@ -48,9 +48,9 @@ impl Interpreter {
 
     fn execute_function_statement(&mut self, statement: FunctionStatement) -> Result<(), Error> {
         self.environment.define(
-            statement.name.clone(),
+            statement.identifier.clone(),
             Object::Function(Function::new(
-                statement.name.lexeme.clone(),
+                statement.identifier.lexeme.clone(),
                 Rc::new(UserDefinedFunction::new(statement)),
             )),
         );
