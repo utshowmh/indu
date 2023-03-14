@@ -1,5 +1,5 @@
 fun is_game_over(secret_number, guess, chances) {
-    if (secret_number == guess or chances == 0) {
+    if secret_number == guess || chances == 0 {
         return true;
     } else {
         return false;
@@ -13,11 +13,11 @@ fun game(secret_number, guess, chances) {
         + " to guess a secret number that's in range of 1 to 100."
     );
 
-    while (!is_game_over(secret_number, guess, chances)) {
+    while !is_game_over(secret_number, guess, chances) {
         write("Enter a guess: ");
         guess = read();
 
-        if (guess > secret_number) {
+        if guess > secret_number {
             writeln("Your guess is too high!");
         } else if (guess < secret_number) {
             writeln("Your guess is too low!");
@@ -35,7 +35,7 @@ var secret_number = 69;
 var chances = 5;
 var guess = 0;
 
-if (game(secret_number, guess, chances)) {
+if game(secret_number, guess, chances) {
     writeln("Congrats! You guessed it.");
 } else {
     writeln("You lost!");

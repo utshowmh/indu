@@ -215,6 +215,34 @@ impl Scanner {
                 }
             }
 
+            '&' => {
+                if self.current_charecter() == '&' {
+                    self.advance_current_index();
+                    Ok(Some(Token::new(
+                        TokenKind::And,
+                        self.generate_lexeme(),
+                        None,
+                        self.current_position.clone(),
+                    )))
+                } else {
+                    Ok(None)
+                }
+            }
+
+            '|' => {
+                if self.current_charecter() == '|' {
+                    self.advance_current_index();
+                    Ok(Some(Token::new(
+                        TokenKind::Or,
+                        self.generate_lexeme(),
+                        None,
+                        self.current_position.clone(),
+                    )))
+                } else {
+                    Ok(None)
+                }
+            }
+
             _ => {
                 if current_char.is_alphabetic() || current_char == '_' {
                     while self.current_charecter().is_ascii_alphanumeric()
@@ -310,7 +338,6 @@ impl Scanner {
     }
 
     fn init_keywords(&mut self) {
-        self.keywords.insert("and".to_string(), TokenKind::And);
         self.keywords.insert("class".to_string(), TokenKind::Class);
         self.keywords.insert("else".to_string(), TokenKind::Else);
         self.keywords.insert("false".to_string(), TokenKind::False);
@@ -318,7 +345,6 @@ impl Scanner {
         self.keywords.insert("for".to_string(), TokenKind::For);
         self.keywords.insert("if".to_string(), TokenKind::If);
         self.keywords.insert("nil".to_string(), TokenKind::Nil);
-        self.keywords.insert("or".to_string(), TokenKind::Or);
         self.keywords
             .insert("return".to_string(), TokenKind::Return);
         self.keywords.insert("super".to_string(), TokenKind::Super);

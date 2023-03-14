@@ -70,9 +70,7 @@ impl Parser {
 
     fn parse_if_statement(&mut self) -> Result<Statement, Error> {
         self.consume_token(TokenKind::If)?;
-        self.consume_token(TokenKind::OpenParen)?;
         let condition = self.parse_expression()?;
-        self.consume_token(TokenKind::CloseParen)?;
         let then_block = self.parse_block_statement()?;
         if self.current_token_matches(&[TokenKind::Else]) {
             self.consume_token(TokenKind::Else)?;
@@ -98,12 +96,10 @@ impl Parser {
 
     fn parse_for_statement(&mut self) -> Result<Statement, Error> {
         self.consume_token(TokenKind::For)?;
-        self.consume_token(TokenKind::OpenParen)?;
         let variable_initialization = self.parse_var_statement()?;
         let condition = self.parse_expression()?;
         self.consume_token(TokenKind::Semicolon)?;
         let step_expression = self.parse_expression()?;
-        self.consume_token(TokenKind::CloseParen)?;
         let do_block = self.parse_block_statement()?;
         let while_statement = Statement::While(WhileStatement::new(
             condition,
@@ -121,9 +117,7 @@ impl Parser {
 
     fn parse_while_statement(&mut self) -> Result<Statement, Error> {
         self.consume_token(TokenKind::While)?;
-        self.consume_token(TokenKind::OpenParen)?;
         let condition = self.parse_expression()?;
-        self.consume_token(TokenKind::CloseParen)?;
         let do_block = self.parse_block_statement()?;
 
         Ok(Statement::While(WhileStatement::new(condition, do_block)))
