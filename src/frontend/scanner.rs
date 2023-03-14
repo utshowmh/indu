@@ -132,12 +132,6 @@ impl Scanner {
                 None,
                 self.current_position.clone(),
             ))),
-            ';' => Ok(Some(Token::new(
-                TokenKind::Semicolon,
-                self.generate_lexeme(),
-                None,
-                self.current_position.clone(),
-            ))),
 
             '=' => {
                 if self.current_charecter() == '=' {

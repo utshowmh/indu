@@ -1,0 +1,5 @@
+fun greet(greeting, name) {
+    return greeting + ", " + name + "!"
+}
+
+writeln(greet("hello", "world"))

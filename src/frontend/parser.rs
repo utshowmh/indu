@@ -97,8 +97,9 @@ impl Parser {
     fn parse_for_statement(&mut self) -> Result<Statement, Error> {
         self.consume_token(TokenKind::For)?;
         let variable_initialization = self.parse_var_statement()?;
+        self.consume_token(TokenKind::Comma)?;
         let condition = self.parse_expression()?;
-        self.consume_token(TokenKind::Semicolon)?;
+        self.consume_token(TokenKind::Comma)?;
         let step_expression = self.parse_expression()?;
         let do_block = self.parse_block_statement()?;
         let while_statement = Statement::While(WhileStatement::new(
@@ -143,7 +144,6 @@ impl Parser {
             self.consume_token(TokenKind::Assign)?;
             initializer = Some(self.parse_expression()?);
         }
-        self.consume_token(TokenKind::Semicolon)?;
 
         Ok(Statement::Variable(VariableStatement::new(
             identifier,
@@ -154,13 +154,11 @@ impl Parser {
     fn parse_return_statement(&mut self) -> Result<Statement, Error> {
         self.consume_token(TokenKind::Return)?;
         let expression = self.parse_expression()?;
-        self.consume_token(TokenKind::Semicolon)?;
         Ok(Statement::Return(ReturnStatement::new(expression)))
     }
 
     fn parse_expression_statement(&mut self) -> Result<Statement, Error> {
         let expression = self.parse_expression()?;
-        self.consume_token(TokenKind::Semicolon)?;
         Ok(Statement::Expression(ExpressionStatement::new(expression)))
     }
 

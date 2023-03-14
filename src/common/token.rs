@@ -28,7 +28,6 @@ pub(crate) enum TokenKind {
     CloseBrace,
     Comma,
     Dot,
-    Semicolon,
 
     And,
     Class,
@@ -74,7 +73,6 @@ impl Display for TokenKind {
             Self::CloseBrace => write!(f, "}}"),
             Self::Comma => write!(f, ","),
             Self::Dot => write!(f, "."),
-            Self::Semicolon => write!(f, ";"),
 
             Self::And => write!(f, "and"),
             Self::Class => write!(f, "class"),
