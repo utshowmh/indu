@@ -3,6 +3,7 @@ use std::io::{stdin, stdout};
 use crate::common::{
     error::{Error, ErrorKind},
     object::{Callable, Object},
+    state::State,
 };
 
 use super::interpreter::Interpreter;
@@ -14,13 +15,13 @@ impl Callable for Write {
         1
     }
 
-    fn call(&self, _: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, Error> {
+    fn call(&self, _: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, State> {
         print!("{}", arguments[0]);
-        std::io::Write::flush(&mut stdout()).or(Err(Error::new(
+        std::io::Write::flush(&mut stdout()).or(Err(State::Error(Error::new(
             ErrorKind::SystemError,
             "Could not flush stdout".to_string(),
             None,
-        )))?;
+        ))))?;
         Ok(Object::Nil)
     }
 }
@@ -32,7 +33,7 @@ impl Callable for WriteLine {
         1
     }
 
-    fn call(&self, _: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, Error> {
+    fn call(&self, _: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, State> {
         println!("{}", arguments[0]);
         Ok(Object::Nil)
     }
@@ -45,13 +46,15 @@ impl Callable for Read {
         0
     }
 
-    fn call(&self, _: &mut Interpreter, _: Vec<Object>) -> Result<Object, Error> {
+    fn call(&self, _: &mut Interpreter, _: Vec<Object>) -> Result<Object, State> {
         let mut input = String::new();
-        stdin().read_line(&mut input).or(Err(Error::new(
-            ErrorKind::SystemError,
-            "Could not read from stdin".to_string(),
-            None,
-        )))?;
+        stdin()
+            .read_line(&mut input)
+            .or(Err(State::Error(Error::new(
+                ErrorKind::SystemError,
+                "Could not read from stdin".to_string(),
+                None,
+            ))))?;
         let input = input.trim().to_string();
         if let Ok(number) = input.parse() {
             Ok(Object::Number(number))

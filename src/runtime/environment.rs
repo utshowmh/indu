@@ -6,6 +6,7 @@ use std::{
 use crate::common::{
     error::{Error, ErrorKind},
     object::Object,
+    state::State,
     token::Token,
 };
 
@@ -27,41 +28,43 @@ impl Environment {
         self.bindings.insert(identifier.lexeme, value);
     }
 
-    pub(super) fn assign(&mut self, identifier: Token, value: Object) -> Result<(), Error> {
+    pub(super) fn assign(&mut self, identifier: Token, value: Object) -> Result<(), State> {
         if self.bindings.get(&identifier.lexeme).is_some() {
             self.define(identifier, value);
             Ok(())
         } else if let Some(environment) = &mut *self.parent {
             environment.assign(identifier, value)
         } else {
-            Err(Error::new(
+            Err(State::Error(Error::new(
                 ErrorKind::RuntimeError,
                 format!("Undefined variable. `{}` is not defined", identifier.lexeme),
                 Some(identifier.position),
-            ))
+            )))
         }
     }
 
-    pub(super) fn access(&self, identifier: Token) -> Result<Object, Error> {
+    pub(super) fn access(&self, identifier: Token) -> Result<Object, State> {
         if let Some(value) = self.bindings.get(&identifier.lexeme) {
             Ok(value.clone())
         } else if let Some(environment) = &*self.parent {
             environment.access(identifier)
         } else {
-            Err(Error::new(
+            Err(State::Error(Error::new(
                 ErrorKind::RuntimeError,
                 format!("Undefined variable. `{}` is not defined", identifier.lexeme),
                 Some(identifier.position),
-            ))
+            )))
         }
     }
 }
 
 impl Display for Environment {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "variables:")?;
         for (name, value) in &self.bindings {
             writeln!(f, "   {name} = {value}")?;
+        }
+        if let Some(environment) = &*self.parent {
+            write!(f, "{environment}")?;
         }
         Ok(())
     }

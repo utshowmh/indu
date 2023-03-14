@@ -27,17 +27,21 @@ impl Interpreter {
         }
     }
 
-    pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<State, Error> {
+    pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<(), Error> {
         for statement in statements {
-            self.execute_statement(statement)?;
+            if let Err(state) = self.execute_statement(statement) {
+                if let State::Error(error) = state {
+                    return Err(error);
+                }
+            }
         }
 
-        Ok(State::Normal)
+        Ok(())
     }
 }
 
 impl Interpreter {
-    pub(crate) fn execute_statement(&mut self, statement: Statement) -> Result<State, Error> {
+    pub(crate) fn execute_statement(&mut self, statement: Statement) -> Result<(), State> {
         match statement {
             Statement::Function(statement) => self.execute_function_statement(statement),
             Statement::If(statement) => self.execute_if_statement(statement),
@@ -49,7 +53,7 @@ impl Interpreter {
         }
     }
 
-    fn execute_function_statement(&mut self, statement: FunctionStatement) -> Result<State, Error> {
+    fn execute_function_statement(&mut self, statement: FunctionStatement) -> Result<(), State> {
         self.environment.define(
             statement.identifier.clone(),
             Object::Function(Function::new(
@@ -58,83 +62,70 @@ impl Interpreter {
             )),
         );
 
-        Ok(State::Normal)
+        Ok(())
     }
 
-    fn execute_if_statement(&mut self, statement: IfStatement) -> Result<State, Error> {
+    fn execute_if_statement(&mut self, statement: IfStatement) -> Result<(), State> {
         let condition = self.evaluate_expression(statement.condition)?;
         if condition.is_truthy() {
-            if let State::Return(object) = self.execute_statement(*statement.then_block)? {
-                return Ok(State::Return(object));
-            }
+            self.execute_statement(*statement.then_block)?;
         } else if let Some(else_block) = *statement.else_block {
-            if let State::Return(object) = self.execute_statement(else_block)? {
-                return Ok(State::Return(object));
-            }
+            self.execute_statement(else_block)?;
         }
 
-        Ok(State::Normal)
+        Ok(())
     }
 
-    fn execute_while_statement(&mut self, statement: WhileStatement) -> Result<State, Error> {
+    fn execute_while_statement(&mut self, statement: WhileStatement) -> Result<(), State> {
         let mut condition = self.evaluate_expression(statement.condition.clone())?;
         while condition.is_truthy() {
-            if let State::Return(object) = self.execute_statement(*statement.do_block.clone())? {
-                return Ok(State::Return(object));
-            }
+            self.execute_statement(*statement.do_block.clone())?;
             condition = self.evaluate_expression(statement.condition.clone())?;
         }
 
-        Ok(State::Normal)
+        Ok(())
     }
 
-    fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<State, Error> {
+    fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<(), State> {
         self.environment = Environment::new(Some(self.environment.clone()));
         for statement in statement.statements {
-            if let State::Return(object) = self.execute_statement(statement)? {
-                self.environment = if let Some(environment) = *self.environment.parent.clone() {
-                    environment
-                } else {
-                    Environment::new(None)
-                };
-                return Ok(State::Return(object));
-            }
+            self.execute_statement(statement)?;
         }
         self.environment = if let Some(environment) = *self.environment.parent.clone() {
             environment
         } else {
             Environment::new(None)
         };
-        Ok(State::Normal)
+        Ok(())
     }
 
-    fn execute_variable_statement(&mut self, statement: VariableStatement) -> Result<State, Error> {
+    fn execute_variable_statement(&mut self, statement: VariableStatement) -> Result<(), State> {
         let value = match statement.initializer {
             Some(expression) => self.evaluate_expression(expression)?,
             None => Object::Nil,
         };
         self.environment.define(statement.identifier, value);
 
-        Ok(State::Normal)
+        Ok(())
     }
 
-    fn execute_return_statement(&mut self, statement: ReturnStatement) -> Result<State, Error> {
+    fn execute_return_statement(&mut self, statement: ReturnStatement) -> Result<(), State> {
         let value = self.evaluate_expression(statement.expression)?;
-        Ok(State::Return(value))
+        Err(State::Return(value))
     }
 
     fn execute_expression_statement(
         &mut self,
         statement: ExpressionStatement,
-    ) -> Result<State, Error> {
+    ) -> Result<(), State> {
         self.evaluate_expression(statement.expression)?;
 
-        Ok(State::Normal)
+        Ok(())
     }
 }
 
 impl Interpreter {
-    fn evaluate_expression(&mut self, expression: Expression) -> Result<Object, Error> {
+    fn evaluate_expression(&mut self, expression: Expression) -> Result<Object, State> {
         match expression {
             Expression::Assignment(expression) => self.evaluate_assignment_expression(expression),
             Expression::Binary(expression) => self.evaluate_binary_expression(expression),
@@ -149,7 +140,7 @@ impl Interpreter {
     fn evaluate_assignment_expression(
         &mut self,
         expression: AssignmentExpression,
-    ) -> Result<Object, Error> {
+    ) -> Result<Object, State> {
         let value = self.evaluate_expression(*expression.initializer)?;
         self.environment
             .assign(expression.identifier, value.clone())?;
@@ -159,7 +150,7 @@ impl Interpreter {
     fn evaluate_binary_expression(
         &mut self,
         expression: BinaryExpression,
-    ) -> Result<Object, Error> {
+    ) -> Result<Object, State> {
         let left_value = self.evaluate_expression(*expression.left)?;
         let right_value = self.evaluate_expression(*expression.right)?;
 
@@ -177,24 +168,24 @@ impl Interpreter {
                 (Object::Number(left_value), Object::String(right_value)) => {
                     Ok(Object::String(format!("{left_value}{right_value}")))
                 }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                (_, _) => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::Minus => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Number(left_value - right_value))
                 }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                (_, _) => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::Star => match (&left_value, &right_value) {
@@ -208,24 +199,24 @@ impl Interpreter {
                     }
                     Ok(Object::String(string))
                 }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                (_, _) => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::Slash => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Number(left_value / right_value))
                 }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                (_, _) => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::Equal => match (&left_value, &right_value) {
@@ -235,12 +226,12 @@ impl Interpreter {
                     Ok(Object::Boolean(left == right))
                 }
                 (Object::Nil, Object::Nil) => Ok(Object::Boolean(true)),
-                _ => Err(self.generate_invalid_binary_operation_error(
+                _ => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::NotEqual => match (&left_value, &right_value) {
@@ -250,60 +241,60 @@ impl Interpreter {
                     Ok(Object::Boolean(left != right))
                 }
                 (Object::Nil, Object::Nil) => Ok(Object::Boolean(true)),
-                _ => Err(self.generate_invalid_binary_operation_error(
+                _ => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::Greater => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Boolean(left_value > right_value))
                 }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                (_, _) => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::GreaterEqual => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Boolean(left_value >= right_value))
                 }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                (_, _) => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::Lesser => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Boolean(left_value < right_value))
                 }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                (_, _) => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::LesserEqual => match (&left_value, &right_value) {
                 (Object::Number(left_value), Object::Number(right_value)) => {
                     Ok(Object::Boolean(left_value <= right_value))
                 }
-                (_, _) => Err(self.generate_invalid_binary_operation_error(
+                (_, _) => Err(State::Error(self.generate_invalid_binary_operation_error(
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
                     expression.operator.position,
-                )),
+                ))),
             },
 
             TokenKind::And => {
@@ -322,15 +313,15 @@ impl Interpreter {
                 }
             }
 
-            _ => Err(self.generate_unexpected_operator_error(
+            _ => Err(State::Error(self.generate_unexpected_operator_error(
                 &expression.operator.lexeme,
                 "binary",
                 expression.operator.position,
-            )),
+            ))),
         }
     }
 
-    fn evaluate_unary_expression(&mut self, expression: UnaryExpression) -> Result<Object, Error> {
+    fn evaluate_unary_expression(&mut self, expression: UnaryExpression) -> Result<Object, State> {
         let value = self.evaluate_expression(*expression.right)?;
 
         match expression.operator.kind {
@@ -352,19 +343,19 @@ impl Interpreter {
                 ),
             },
 
-            _ => Err(self.generate_unexpected_operator_error(
+            _ => Err(State::Error(self.generate_unexpected_operator_error(
                 &expression.operator.lexeme,
                 "unary",
                 expression.operator.position,
-            )),
+            ))),
         }
     }
 
-    fn evaluate_group_expression(&mut self, expression: GroupExpression) -> Result<Object, Error> {
+    fn evaluate_group_expression(&mut self, expression: GroupExpression) -> Result<Object, State> {
         self.evaluate_expression(*expression.child)
     }
 
-    fn evaluate_call_expression(&mut self, expression: CallExpression) -> Result<Object, Error> {
+    fn evaluate_call_expression(&mut self, expression: CallExpression) -> Result<Object, State> {
         let callee_position = expression.position();
         let callee = self.evaluate_expression(*expression.callee)?;
         let mut arguments = Vec::new();
@@ -376,21 +367,24 @@ impl Interpreter {
             if function.callee.arity() == arguments.len() {
                 function.callee.call(self, arguments)
             } else {
-                Err(self.generate_error(
+                Err(State::Error(self.generate_error(
                     format!(
                         "Expected {} arguments, got {}",
                         function.callee.arity(),
                         arguments.len()
                     ),
                     callee_position,
-                ))
+                )))
             }
         } else {
-            Err(self.generate_error(format!("`{callee}` is not callable"), callee_position))
+            Err(State::Error(self.generate_error(
+                format!("`{callee}` is not callable"),
+                callee_position,
+            )))
         }
     }
 
-    fn evaluate_literal_expression(&self, expression: LiteralExpression) -> Result<Object, Error> {
+    fn evaluate_literal_expression(&self, expression: LiteralExpression) -> Result<Object, State> {
         if let Some(value) = expression.value {
             Ok(value)
         } else {
@@ -401,7 +395,7 @@ impl Interpreter {
     fn evaluate_variable_expression(
         &self,
         expression: VariableExpression,
-    ) -> Result<Object, Error> {
+    ) -> Result<Object, State> {
         self.environment.access(expression.identifier)
     }
 }
@@ -412,11 +406,11 @@ impl Interpreter {
         operator_lexeme: &str,
         value: Object,
         operator_position: Position,
-    ) -> Result<Object, Error> {
-        Err(self.generate_error(
+    ) -> Result<Object, State> {
+        Err(State::Error(self.generate_error(
             format!("Invalid unary operation. `{operator_lexeme}` is not defined for `{value}`"),
             operator_position,
-        ))
+        )))
     }
 
     fn generate_invalid_binary_operation_error(

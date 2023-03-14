@@ -12,7 +12,6 @@ use common::error::{Error, ErrorKind};
 use runtime::environment::Environment;
 
 use crate::{
-    common::state::State,
     frontend::{parser::Parser, scanner::Scanner},
     runtime::interpreter::Interpreter,
 };
@@ -48,9 +47,7 @@ fn run_file(source_path: &str) -> Result<(), Error> {
         let expression = parser.parse()?;
 
         let mut interpreter = Interpreter::new(Environment::new(None));
-        interpreter.interpret(expression)?;
-
-        Ok(())
+        interpreter.interpret(expression)
     } else {
         Err(Error::new(
             ErrorKind::SystemError,
@@ -83,7 +80,10 @@ fn run_repl() -> Result<(), Error> {
         if line.starts_with('#') {
             match line {
                 "#cmd" => print!("{COMMANDS}"),
-                "#env" => print!("{environment}"),
+                "#env" => {
+                    println!("Environment:");
+                    print!("{environment}");
+                }
                 "#exit" => {
                     println!("Exiting Indu REPL.");
                     break;
@@ -111,7 +111,6 @@ fn run_repl() -> Result<(), Error> {
         let mut interpreter = Interpreter::new(environment.clone());
         interpreter.interpret(expression).unwrap_or_else(|error| {
             error.report();
-            State::Normal
         });
 
         environment = interpreter.environment.clone();

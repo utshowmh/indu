@@ -5,7 +5,7 @@ use std::{
 
 use crate::runtime::interpreter::Interpreter;
 
-use super::{ast::FunctionStatement, error::Error, state::State};
+use super::{ast::FunctionStatement, state::State};
 
 #[derive(Debug, Clone)]
 pub(crate) enum Object {
@@ -60,7 +60,7 @@ impl Debug for Function {
 
 pub(crate) trait Callable {
     fn arity(&self) -> usize;
-    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, Error>;
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, State>;
 }
 
 pub(crate) struct UserDefinedFunction {
@@ -78,16 +78,16 @@ impl Callable for UserDefinedFunction {
         self.statement.parameters.len()
     }
 
-    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, Error> {
+    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, State> {
         for (identifier, value) in self.statement.parameters.iter().zip(arguments) {
-            interpreter.environment.define(identifier.clone(), value)
+            interpreter.environment.define(identifier.clone(), value);
         }
-        if let State::Return(object) =
-            interpreter.execute_statement(*self.statement.block.clone())?
-        {
-            Ok(object)
-        } else {
-            Ok(Object::Nil)
+        match interpreter.execute_statement(*self.statement.block.clone()) {
+            Ok(_) => Ok(Object::Nil),
+            Err(state) => match state {
+                State::Return(object) => Ok(object),
+                _ => Err(state),
+            },
         }
     }
 }

@@ -1,6 +1,6 @@
-use super::object::Object;
+use super::{error::Error, object::Object};
 
 pub(crate) enum State {
-    Normal,
+    Error(Error),
     Return(Object),
 }
