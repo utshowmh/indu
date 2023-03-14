@@ -47,7 +47,7 @@ fn run_file(source_path: &str) -> Result<(), Error> {
         let mut parser = Parser::new(tokens);
         let expression = parser.parse()?;
 
-        let mut interpreter = Interpreter::new(Environment::new());
+        let mut interpreter = Interpreter::new(Environment::new(None));
         interpreter.interpret(expression)?;
 
         Ok(())
@@ -63,7 +63,7 @@ fn run_file(source_path: &str) -> Result<(), Error> {
 fn run_repl() -> Result<(), Error> {
     println!("Welcome to Indu REPL. Type  `#cmd` to see available commands.\n");
 
-    let mut environment = Environment::new();
+    let mut environment = Environment::new(None);
 
     loop {
         print!("Indu :> ");

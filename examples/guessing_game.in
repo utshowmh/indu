@@ -8,8 +8,8 @@ fun is_game_over(secret_number, guess, chances) {
 
 fun game(secret_number, guess, chances) {
     writeln(
-        "Welcome to indu guessing game. You have " 
-        + chances 
+        "Welcome to indu guessing game. You have "
+        + chances
         + " to guess a secret number that's in range of 1 to 100."
     );
 

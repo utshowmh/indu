@@ -89,11 +89,22 @@ impl Interpreter {
     }
 
     fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<State, Error> {
+        self.environment = Environment::new(Some(self.environment.clone()));
         for statement in statement.statements {
             if let State::Return(object) = self.execute_statement(statement)? {
+                self.environment = if let Some(environment) = *self.environment.parent.clone() {
+                    environment
+                } else {
+                    Environment::new(None)
+                };
                 return Ok(State::Return(object));
             }
         }
+        self.environment = if let Some(environment) = *self.environment.parent.clone() {
+            environment
+        } else {
+            Environment::new(None)
+        };
         Ok(State::Normal)
     }
 

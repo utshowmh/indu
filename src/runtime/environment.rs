@@ -11,12 +11,14 @@ use crate::common::{
 
 #[derive(Debug, Clone)]
 pub(crate) struct Environment {
+    pub(super) parent: Box<Option<Environment>>,
     bindings: HashMap<String, Object>,
 }
 
 impl Environment {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(parent: Option<Environment>) -> Self {
         Self {
+            parent: Box::new(parent),
             bindings: HashMap::new(),
         }
     }
@@ -29,6 +31,8 @@ impl Environment {
         if self.bindings.get(&identifier.lexeme).is_some() {
             self.define(identifier, value);
             Ok(())
+        } else if let Some(environment) = &mut *self.parent {
+            environment.assign(identifier, value)
         } else {
             Err(Error::new(
                 ErrorKind::RuntimeError,
@@ -41,6 +45,8 @@ impl Environment {
     pub(super) fn access(&self, identifier: Token) -> Result<Object, Error> {
         if let Some(value) = self.bindings.get(&identifier.lexeme) {
             Ok(value.clone())
+        } else if let Some(environment) = &*self.parent {
+            environment.access(identifier)
         } else {
             Err(Error::new(
                 ErrorKind::RuntimeError,
