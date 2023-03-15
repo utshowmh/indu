@@ -52,20 +52,20 @@ pub(crate) enum ElseStatement {
 #[derive(Debug, Clone)]
 pub(crate) struct IfStatement {
     pub(crate) condition: Expression,
-    pub(crate) then_block: BlockStatement,
-    pub(crate) else_block: Box<Option<ElseStatement>>,
+    pub(crate) then_branch: BlockStatement,
+    pub(crate) else_branch: Box<Option<ElseStatement>>,
 }
 
 impl IfStatement {
     pub(crate) fn new(
         condition: Expression,
-        then_block: BlockStatement,
-        else_block: Option<ElseStatement>,
+        then_branch: BlockStatement,
+        else_branch: Option<ElseStatement>,
     ) -> Self {
         Self {
             condition,
-            then_block,
-            else_block: Box::new(else_block),
+            then_branch,
+            else_branch: Box::new(else_branch),
         }
     }
 }

@@ -29,8 +29,18 @@ impl Interpreter {
 
     pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<(), Error> {
         for statement in &statements {
-            if let Err(State::Error(error)) = self.execute_statement(statement) {
-                return Err(error);
+            match self.execute_statement(statement) {
+                Ok(_) => {}
+                Err(state) => match state {
+                    State::Error(error) => return Err(error),
+                    State::Return(_) => {
+                        return Err(Error::new(
+                            ErrorKind::RuntimeError,
+                            "Can not use `return` outside of a function".to_string(),
+                            None,
+                        ))
+                    }
+                },
             }
         }
 
@@ -66,8 +76,8 @@ impl Interpreter {
     fn execute_if_statement(&mut self, statement: &IfStatement) -> Result<(), State> {
         let condition = self.evaluate_expression(&statement.condition)?;
         if condition.is_truthy() {
-            self.execute_block_statement(&statement.then_block)?;
-        } else if let Some(else_block) = &*statement.else_block {
+            self.execute_block_statement(&statement.then_branch)?;
+        } else if let Some(else_block) = &*statement.else_branch {
             match else_block {
                 ElseStatement::Block(statement) => self.execute_block_statement(statement)?,
                 ElseStatement::If(statement) => self.execute_if_statement(statement)?,

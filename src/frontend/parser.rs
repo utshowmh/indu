@@ -69,26 +69,26 @@ impl Parser {
     fn parse_if_statement(&mut self) -> Result<IfStatement, Error> {
         self.consume_token(TokenKind::If)?;
         let condition = self.parse_expression()?;
-        let then_block = self.parse_block_statement()?;
+        let then_branch = self.parse_block_statement()?;
         if self.current_token_matches(&[TokenKind::Else]) {
             self.consume_token(TokenKind::Else)?;
             if self.current_token_matches(&[TokenKind::If]) {
-                let else_block = self.parse_if_statement()?;
+                let else_branch = self.parse_if_statement()?;
                 Ok(IfStatement::new(
                     condition,
-                    then_block,
-                    Some(ElseStatement::If(else_block)),
+                    then_branch,
+                    Some(ElseStatement::If(else_branch)),
                 ))
             } else {
-                let else_block = self.parse_block_statement()?;
+                let else_branch = self.parse_block_statement()?;
                 Ok(IfStatement::new(
                     condition,
-                    then_block,
-                    Some(ElseStatement::Block(else_block)),
+                    then_branch,
+                    Some(ElseStatement::Block(else_branch)),
                 ))
             }
         } else {
-            Ok(IfStatement::new(condition, then_block, None))
+            Ok(IfStatement::new(condition, then_branch, None))
         }
     }
 
