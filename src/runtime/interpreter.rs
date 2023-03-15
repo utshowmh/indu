@@ -67,33 +67,21 @@ impl Interpreter {
 
     fn execute_if_statement(&mut self, statement: IfStatement) -> Result<(), State> {
         let condition = self.evaluate_expression(statement.condition)?;
-        self.environment = Environment::new(Some(self.environment.clone()));
         if condition.is_truthy() {
             self.execute_statement(*statement.then_block)?;
         } else if let Some(else_block) = *statement.else_block {
             self.execute_statement(else_block)?;
         }
-        self.environment = if let Some(environment) = *self.environment.parent.clone() {
-            environment
-        } else {
-            Environment::new(None)
-        };
 
         Ok(())
     }
 
     fn execute_while_statement(&mut self, statement: WhileStatement) -> Result<(), State> {
         let mut condition = self.evaluate_expression(statement.condition.clone())?;
-        self.environment = Environment::new(Some(self.environment.clone()));
         while condition.is_truthy() {
             self.execute_statement(*statement.do_block.clone())?;
             condition = self.evaluate_expression(statement.condition.clone())?;
         }
-        self.environment = if let Some(environment) = *self.environment.parent.clone() {
-            environment
-        } else {
-            Environment::new(None)
-        };
 
         Ok(())
     }
