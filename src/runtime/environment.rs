@@ -12,7 +12,7 @@ use crate::common::{
 
 #[derive(Debug, Clone)]
 pub(crate) struct Environment {
-    pub(super) parent: Box<Option<Environment>>,
+    pub(crate) parent: Box<Option<Environment>>,
     bindings: HashMap<String, Object>,
 }
 

@@ -3,7 +3,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::runtime::interpreter::Interpreter;
+use crate::runtime::{environment::Environment, interpreter::Interpreter};
 
 use super::{ast::FunctionStatement, state::State};
 
@@ -79,13 +79,23 @@ impl Callable for UserDefinedFunction {
     }
 
     fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Result<Object, State> {
+        let mut environment = Environment::new(Some(interpreter.environment.clone()));
         for (identifier, value) in self.statement.parameters.iter().zip(arguments) {
-            interpreter.environment.define(identifier.clone(), value);
+            environment.define(identifier.clone(), value);
         }
+        interpreter.environment = environment;
         match interpreter.execute_statement(*self.statement.block.clone()) {
             Ok(_) => Ok(Object::Nil),
             Err(state) => match state {
-                State::Return(object) => Ok(object),
+                State::Return(object) => {
+                    interpreter.environment =
+                        if let Some(environment) = *interpreter.environment.parent.clone() {
+                            environment
+                        } else {
+                            Environment::new(None)
+                        };
+                    Ok(object)
+                }
                 _ => Err(state),
             },
         }
