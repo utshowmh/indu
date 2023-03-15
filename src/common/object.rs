@@ -84,20 +84,24 @@ impl Callable for UserDefinedFunction {
             environment.define(identifier.clone(), value);
         }
         interpreter.environment = environment;
-        match interpreter.execute_statement(*self.statement.block.clone()) {
-            Ok(_) => Ok(Object::Nil),
-            Err(state) => match state {
-                State::Return(object) => {
-                    interpreter.environment =
-                        if let Some(environment) = *interpreter.environment.parent.clone() {
-                            environment
-                        } else {
-                            Environment::new(None)
-                        };
-                    Ok(object)
-                }
-                _ => Err(state),
-            },
+        for statement in &self.statement.block.statements {
+            match interpreter.execute_statement(statement) {
+                Ok(_) => {}
+                Err(state) => match state {
+                    State::Return(object) => {
+                        interpreter.environment =
+                            if let Some(environment) = *interpreter.environment.parent.clone() {
+                                environment
+                            } else {
+                                Environment::new(None)
+                            };
+                        return Ok(object);
+                    }
+                    _ => return Err(state),
+                },
+            };
         }
+
+        Ok(Object::Nil)
     }
 }

@@ -12,53 +12,59 @@ pub(crate) enum Statement {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct WhileStatement {
-    pub(crate) condition: Expression,
-    pub(crate) do_block: Box<Statement>,
+pub(crate) struct FunctionStatement {
+    pub(crate) identifier: Token,
+    pub(crate) parameters: Vec<Token>,
+    pub(crate) block: BlockStatement,
 }
 
-impl WhileStatement {
-    pub(crate) fn new(condition: Expression, do_block: Statement) -> Self {
+impl FunctionStatement {
+    pub(crate) fn new(identifier: Token, parameters: Vec<Token>, block: BlockStatement) -> Self {
         Self {
-            condition,
-            do_block: Box::new(do_block),
+            identifier,
+            parameters,
+            block,
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct FunctionStatement {
-    pub(crate) identifier: Token,
-    pub(crate) parameters: Vec<Token>,
-    pub(crate) block: Box<Statement>,
+pub(crate) struct WhileStatement {
+    pub(crate) condition: Expression,
+    pub(crate) do_block: BlockStatement,
 }
 
-impl FunctionStatement {
-    pub(crate) fn new(identifier: Token, parameters: Vec<Token>, block: Statement) -> Self {
+impl WhileStatement {
+    pub(crate) fn new(condition: Expression, do_block: BlockStatement) -> Self {
         Self {
-            identifier,
-            parameters,
-            block: Box::new(block),
+            condition,
+            do_block,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum ElseStatement {
+    If(IfStatement),
+    Block(BlockStatement),
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct IfStatement {
     pub(crate) condition: Expression,
-    pub(crate) then_block: Box<Statement>,
-    pub(crate) else_block: Box<Option<Statement>>,
+    pub(crate) then_block: BlockStatement,
+    pub(crate) else_block: Box<Option<ElseStatement>>,
 }
 
 impl IfStatement {
     pub(crate) fn new(
         condition: Expression,
-        then_block: Statement,
-        else_block: Option<Statement>,
+        then_block: BlockStatement,
+        else_block: Option<ElseStatement>,
     ) -> Self {
         Self {
             condition,
-            then_block: Box::new(then_block),
+            then_block,
             else_block: Box::new(else_block),
         }
     }

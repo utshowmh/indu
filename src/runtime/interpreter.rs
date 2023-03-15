@@ -2,10 +2,10 @@ use std::rc::Rc;
 
 use crate::common::{
     ast::{
-        AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
-        ExpressionStatement, FunctionStatement, GroupExpression, IfStatement, LiteralExpression,
-        ReturnStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
-        WhileStatement,
+        AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, ElseStatement,
+        Expression, ExpressionStatement, FunctionStatement, GroupExpression, IfStatement,
+        LiteralExpression, ReturnStatement, Statement, UnaryExpression, VariableExpression,
+        VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     object::{Function, Object, UserDefinedFunction},
@@ -28,11 +28,9 @@ impl Interpreter {
     }
 
     pub(crate) fn interpret(&mut self, statements: Vec<Statement>) -> Result<(), Error> {
-        for statement in statements {
-            if let Err(state) = self.execute_statement(statement) {
-                if let State::Error(error) = state {
-                    return Err(error);
-                }
+        for statement in &statements {
+            if let Err(State::Error(error)) = self.execute_statement(statement) {
+                return Err(error);
             }
         }
 
@@ -41,7 +39,7 @@ impl Interpreter {
 }
 
 impl Interpreter {
-    pub(crate) fn execute_statement(&mut self, statement: Statement) -> Result<(), State> {
+    pub(crate) fn execute_statement(&mut self, statement: &Statement) -> Result<(), State> {
         match statement {
             Statement::Function(statement) => self.execute_function_statement(statement),
             Statement::If(statement) => self.execute_if_statement(statement),
@@ -53,73 +51,82 @@ impl Interpreter {
         }
     }
 
-    fn execute_function_statement(&mut self, statement: FunctionStatement) -> Result<(), State> {
+    fn execute_function_statement(&mut self, statement: &FunctionStatement) -> Result<(), State> {
         self.environment.define(
             statement.identifier.clone(),
             Object::Function(Function::new(
                 statement.identifier.lexeme.clone(),
-                Rc::new(UserDefinedFunction::new(statement)),
+                Rc::new(UserDefinedFunction::new(statement.clone())),
             )),
         );
 
         Ok(())
     }
 
-    fn execute_if_statement(&mut self, statement: IfStatement) -> Result<(), State> {
-        let condition = self.evaluate_expression(statement.condition)?;
+    fn execute_if_statement(&mut self, statement: &IfStatement) -> Result<(), State> {
+        let condition = self.evaluate_expression(&statement.condition)?;
         if condition.is_truthy() {
-            self.execute_statement(*statement.then_block)?;
-        } else if let Some(else_block) = *statement.else_block {
-            self.execute_statement(else_block)?;
+            self.execute_block_statement(&statement.then_block)?;
+        } else if let Some(else_block) = &*statement.else_block {
+            match else_block {
+                ElseStatement::Block(statement) => self.execute_block_statement(statement)?,
+                ElseStatement::If(statement) => self.execute_if_statement(statement)?,
+            };
         }
 
         Ok(())
     }
 
-    fn execute_while_statement(&mut self, statement: WhileStatement) -> Result<(), State> {
-        let mut condition = self.evaluate_expression(statement.condition.clone())?;
+    fn execute_while_statement(&mut self, statement: &WhileStatement) -> Result<(), State> {
+        let mut condition = self.evaluate_expression(&statement.condition)?;
         while condition.is_truthy() {
-            self.execute_statement(*statement.do_block.clone())?;
-            condition = self.evaluate_expression(statement.condition.clone())?;
+            self.execute_block_statement(&statement.do_block)?;
+            condition = self.evaluate_expression(&statement.condition)?;
         }
 
         Ok(())
     }
 
-    fn execute_block_statement(&mut self, statement: BlockStatement) -> Result<(), State> {
-        for statement in statement.statements {
+    fn execute_block_statement(&mut self, statement: &BlockStatement) -> Result<(), State> {
+        self.environment = Environment::new(Some(self.environment.clone()));
+        for statement in &statement.statements {
             self.execute_statement(statement)?;
         }
+        self.environment = if let Some(environment) = *self.environment.parent.clone() {
+            environment
+        } else {
+            Environment::new(None)
+        };
         Ok(())
     }
 
-    fn execute_variable_statement(&mut self, statement: VariableStatement) -> Result<(), State> {
-        let value = match statement.initializer {
+    fn execute_variable_statement(&mut self, statement: &VariableStatement) -> Result<(), State> {
+        let value = match &statement.initializer {
             Some(expression) => self.evaluate_expression(expression)?,
             None => Object::Nil,
         };
-        self.environment.define(statement.identifier, value);
+        self.environment.define(statement.identifier.clone(), value);
 
         Ok(())
     }
 
-    fn execute_return_statement(&mut self, statement: ReturnStatement) -> Result<(), State> {
-        let value = self.evaluate_expression(statement.expression)?;
+    fn execute_return_statement(&mut self, statement: &ReturnStatement) -> Result<(), State> {
+        let value = self.evaluate_expression(&statement.expression)?;
         Err(State::Return(value))
     }
 
     fn execute_expression_statement(
         &mut self,
-        statement: ExpressionStatement,
+        statement: &ExpressionStatement,
     ) -> Result<(), State> {
-        self.evaluate_expression(statement.expression)?;
+        self.evaluate_expression(&statement.expression)?;
 
         Ok(())
     }
 }
 
 impl Interpreter {
-    fn evaluate_expression(&mut self, expression: Expression) -> Result<Object, State> {
+    fn evaluate_expression(&mut self, expression: &Expression) -> Result<Object, State> {
         match expression {
             Expression::Assignment(expression) => self.evaluate_assignment_expression(expression),
             Expression::Binary(expression) => self.evaluate_binary_expression(expression),
@@ -133,20 +140,20 @@ impl Interpreter {
 
     fn evaluate_assignment_expression(
         &mut self,
-        expression: AssignmentExpression,
+        expression: &AssignmentExpression,
     ) -> Result<Object, State> {
-        let value = self.evaluate_expression(*expression.initializer)?;
+        let value = self.evaluate_expression(&expression.initializer)?;
         self.environment
-            .assign(expression.identifier, value.clone())?;
+            .assign(expression.identifier.clone(), value.clone())?;
         Ok(value)
     }
 
     fn evaluate_binary_expression(
         &mut self,
-        expression: BinaryExpression,
+        expression: &BinaryExpression,
     ) -> Result<Object, State> {
-        let left_value = self.evaluate_expression(*expression.left)?;
-        let right_value = self.evaluate_expression(*expression.right)?;
+        let left_value = self.evaluate_expression(&expression.left)?;
+        let right_value = self.evaluate_expression(&expression.right)?;
 
         match expression.operator.kind {
             TokenKind::Plus => match (&left_value, &right_value) {
@@ -166,7 +173,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -178,7 +185,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -197,7 +204,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -209,7 +216,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -224,7 +231,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -239,7 +246,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -251,7 +258,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -263,7 +270,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -275,7 +282,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -287,7 +294,7 @@ impl Interpreter {
                     &expression.operator.lexeme,
                     left_value,
                     right_value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ))),
             },
 
@@ -310,13 +317,13 @@ impl Interpreter {
             _ => Err(State::Error(self.generate_unexpected_operator_error(
                 &expression.operator.lexeme,
                 "binary",
-                expression.operator.position,
+                &expression.operator.position,
             ))),
         }
     }
 
-    fn evaluate_unary_expression(&mut self, expression: UnaryExpression) -> Result<Object, State> {
-        let value = self.evaluate_expression(*expression.right)?;
+    fn evaluate_unary_expression(&mut self, expression: &UnaryExpression) -> Result<Object, State> {
+        let value = self.evaluate_expression(&expression.right)?;
 
         match expression.operator.kind {
             TokenKind::Not => match value {
@@ -324,7 +331,7 @@ impl Interpreter {
                 _ => self.generate_invalid_unary_operation_error(
                     &expression.operator.lexeme,
                     value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ),
             },
 
@@ -333,27 +340,27 @@ impl Interpreter {
                 _ => self.generate_invalid_unary_operation_error(
                     &expression.operator.lexeme,
                     value,
-                    expression.operator.position,
+                    &expression.operator.position,
                 ),
             },
 
             _ => Err(State::Error(self.generate_unexpected_operator_error(
                 &expression.operator.lexeme,
                 "unary",
-                expression.operator.position,
+                &expression.operator.position,
             ))),
         }
     }
 
-    fn evaluate_group_expression(&mut self, expression: GroupExpression) -> Result<Object, State> {
-        self.evaluate_expression(*expression.child)
+    fn evaluate_group_expression(&mut self, expression: &GroupExpression) -> Result<Object, State> {
+        self.evaluate_expression(&expression.child)
     }
 
-    fn evaluate_call_expression(&mut self, expression: CallExpression) -> Result<Object, State> {
+    fn evaluate_call_expression(&mut self, expression: &CallExpression) -> Result<Object, State> {
         let callee_position = expression.position();
-        let callee = self.evaluate_expression(*expression.callee)?;
+        let callee = self.evaluate_expression(&expression.callee)?;
         let mut arguments = Vec::new();
-        for argument in expression.arguments {
+        for argument in &expression.arguments {
             arguments.push(self.evaluate_expression(argument)?);
         }
 
@@ -367,20 +374,20 @@ impl Interpreter {
                         function.callee.arity(),
                         arguments.len()
                     ),
-                    callee_position,
+                    &callee_position,
                 )))
             }
         } else {
             Err(State::Error(self.generate_error(
                 format!("`{callee}` is not callable"),
-                callee_position,
+                &callee_position,
             )))
         }
     }
 
-    fn evaluate_literal_expression(&self, expression: LiteralExpression) -> Result<Object, State> {
-        if let Some(value) = expression.value {
-            Ok(value)
+    fn evaluate_literal_expression(&self, expression: &LiteralExpression) -> Result<Object, State> {
+        if let Some(value) = &expression.value {
+            Ok(value.clone())
         } else {
             panic!("FIXME: Add proper error handling.")
         }
@@ -388,9 +395,9 @@ impl Interpreter {
 
     fn evaluate_variable_expression(
         &self,
-        expression: VariableExpression,
+        expression: &VariableExpression,
     ) -> Result<Object, State> {
-        self.environment.access(expression.identifier)
+        self.environment.access(expression.identifier.clone())
     }
 }
 
@@ -399,7 +406,7 @@ impl Interpreter {
         &self,
         operator_lexeme: &str,
         value: Object,
-        operator_position: Position,
+        operator_position: &Position,
     ) -> Result<Object, State> {
         Err(State::Error(self.generate_error(
             format!("Invalid unary operation. `{operator_lexeme}` is not defined for `{value}`"),
@@ -412,7 +419,7 @@ impl Interpreter {
         operator_lexeme: &str,
         left_value: Object,
         right_value: Object,
-        operator_position: Position,
+        operator_position: &Position,
     ) -> Error {
         self.generate_error(
             format!(
@@ -426,7 +433,7 @@ impl Interpreter {
         &self,
         operator_lexeme: &str,
         current_operation: &str,
-        operator_position: Position,
+        operator_position: &Position,
     ) -> Error {
         self.generate_error(
             format!(
@@ -436,7 +443,7 @@ impl Interpreter {
         )
     }
 
-    fn generate_error(&self, message: String, position: Position) -> Error {
-        Error::new(ErrorKind::RuntimeError, message, Some(position))
+    fn generate_error(&self, message: String, position: &Position) -> Error {
+        Error::new(ErrorKind::RuntimeError, message, Some(position.clone()))
     }
 }

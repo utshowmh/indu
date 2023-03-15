@@ -1,9 +1,9 @@
 use crate::common::{
     ast::{
-        AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
-        ExpressionStatement, FunctionStatement, GroupExpression, IfStatement, LiteralExpression,
-        ReturnStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
-        WhileStatement,
+        AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, ElseStatement,
+        Expression, ExpressionStatement, FunctionStatement, GroupExpression, IfStatement,
+        LiteralExpression, ReturnStatement, Statement, UnaryExpression, VariableExpression,
+        VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -34,18 +34,18 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Result<Statement, Error> {
         match self.current_token().kind {
-            TokenKind::Fun => self.parse_function_statement(),
-            TokenKind::If => self.parse_if_statement(),
-            TokenKind::For => self.parse_for_statement(),
-            TokenKind::While => self.parse_while_statement(),
-            TokenKind::OpenBrace => self.parse_block_statement(),
-            TokenKind::Var => self.parse_var_statement(),
-            TokenKind::Return => self.parse_return_statement(),
-            _ => self.parse_expression_statement(),
+            TokenKind::Fun => Ok(Statement::Function(self.parse_function_statement()?)),
+            TokenKind::If => Ok(Statement::If(self.parse_if_statement()?)),
+            TokenKind::For => Ok(Statement::Block(self.parse_for_statement()?)),
+            TokenKind::While => Ok(Statement::While(self.parse_while_statement()?)),
+            TokenKind::OpenBrace => Ok(Statement::Block(self.parse_block_statement()?)),
+            TokenKind::Var => Ok(Statement::Variable(self.parse_var_statement()?)),
+            TokenKind::Return => Ok(Statement::Return(self.parse_return_statement()?)),
+            _ => Ok(Statement::Expression(self.parse_expression_statement()?)),
         }
     }
 
-    fn parse_function_statement(&mut self) -> Result<Statement, Error> {
+    fn parse_function_statement(&mut self) -> Result<FunctionStatement, Error> {
         self.consume_token(TokenKind::Fun)?;
         let identifier = self.consume_token(TokenKind::Identifier)?;
         self.consume_token(TokenKind::OpenParen)?;
@@ -63,12 +63,10 @@ impl Parser {
         self.consume_token(TokenKind::CloseParen)?;
         let block = self.parse_block_statement()?;
 
-        Ok(Statement::Function(FunctionStatement::new(
-            identifier, parameters, block,
-        )))
+        Ok(FunctionStatement::new(identifier, parameters, block))
     }
 
-    fn parse_if_statement(&mut self) -> Result<Statement, Error> {
+    fn parse_if_statement(&mut self) -> Result<IfStatement, Error> {
         self.consume_token(TokenKind::If)?;
         let condition = self.parse_expression()?;
         let then_block = self.parse_block_statement()?;
@@ -76,25 +74,25 @@ impl Parser {
             self.consume_token(TokenKind::Else)?;
             if self.current_token_matches(&[TokenKind::If]) {
                 let else_block = self.parse_if_statement()?;
-                Ok(Statement::If(IfStatement::new(
+                Ok(IfStatement::new(
                     condition,
                     then_block,
-                    Some(else_block),
-                )))
+                    Some(ElseStatement::If(else_block)),
+                ))
             } else {
                 let else_block = self.parse_block_statement()?;
-                Ok(Statement::If(IfStatement::new(
+                Ok(IfStatement::new(
                     condition,
                     then_block,
-                    Some(else_block),
-                )))
+                    Some(ElseStatement::Block(else_block)),
+                ))
             }
         } else {
-            Ok(Statement::If(IfStatement::new(condition, then_block, None)))
+            Ok(IfStatement::new(condition, then_block, None))
         }
     }
 
-    fn parse_for_statement(&mut self) -> Result<Statement, Error> {
+    fn parse_for_statement(&mut self) -> Result<BlockStatement, Error> {
         self.consume_token(TokenKind::For)?;
         let variable_initialization = self.parse_var_statement()?;
         self.consume_token(TokenKind::Comma)?;
@@ -104,27 +102,27 @@ impl Parser {
         let do_block = self.parse_block_statement()?;
         let while_statement = Statement::While(WhileStatement::new(
             condition,
-            Statement::Block(BlockStatement::new(vec![
-                do_block,
+            BlockStatement::new(vec![
+                Statement::Block(do_block),
                 Statement::Expression(ExpressionStatement::new(step_expression)),
-            ])),
+            ]),
         ));
 
-        Ok(Statement::Block(BlockStatement::new(vec![
-            variable_initialization,
+        Ok(BlockStatement::new(vec![
+            Statement::Variable(variable_initialization),
             while_statement,
-        ])))
+        ]))
     }
 
-    fn parse_while_statement(&mut self) -> Result<Statement, Error> {
+    fn parse_while_statement(&mut self) -> Result<WhileStatement, Error> {
         self.consume_token(TokenKind::While)?;
         let condition = self.parse_expression()?;
         let do_block = self.parse_block_statement()?;
 
-        Ok(Statement::While(WhileStatement::new(condition, do_block)))
+        Ok(WhileStatement::new(condition, do_block))
     }
 
-    fn parse_block_statement(&mut self) -> Result<Statement, Error> {
+    fn parse_block_statement(&mut self) -> Result<BlockStatement, Error> {
         self.consume_token(TokenKind::OpenBrace)?;
         let mut statements = Vec::new();
         while !self.current_token_matches(&[TokenKind::CloseBrace]) && !self.current_token_is_eof()
@@ -133,10 +131,10 @@ impl Parser {
         }
         self.consume_token(TokenKind::CloseBrace)?;
 
-        Ok(Statement::Block(BlockStatement::new(statements)))
+        Ok(BlockStatement::new(statements))
     }
 
-    fn parse_var_statement(&mut self) -> Result<Statement, Error> {
+    fn parse_var_statement(&mut self) -> Result<VariableStatement, Error> {
         self.consume_token(TokenKind::Var)?;
         let identifier = self.consume_token(TokenKind::Identifier)?;
         let mut initializer = None;
@@ -145,21 +143,18 @@ impl Parser {
             initializer = Some(self.parse_expression()?);
         }
 
-        Ok(Statement::Variable(VariableStatement::new(
-            identifier,
-            initializer,
-        )))
+        Ok(VariableStatement::new(identifier, initializer))
     }
 
-    fn parse_return_statement(&mut self) -> Result<Statement, Error> {
+    fn parse_return_statement(&mut self) -> Result<ReturnStatement, Error> {
         self.consume_token(TokenKind::Return)?;
         let expression = self.parse_expression()?;
-        Ok(Statement::Return(ReturnStatement::new(expression)))
+        Ok(ReturnStatement::new(expression))
     }
 
-    fn parse_expression_statement(&mut self) -> Result<Statement, Error> {
+    fn parse_expression_statement(&mut self) -> Result<ExpressionStatement, Error> {
         let expression = self.parse_expression()?;
-        Ok(Statement::Expression(ExpressionStatement::new(expression)))
+        Ok(ExpressionStatement::new(expression))
     }
 
     fn parse_expression(&mut self) -> Result<Expression, Error> {
