@@ -239,95 +239,103 @@ impl Scanner {
 
             _ => {
                 if current_char.is_alphabetic() || current_char == '_' {
-                    while self.current_charecter().is_ascii_alphanumeric()
-                        || self.current_charecter() == '_'
-                    {
-                        self.advance_current_index();
-                    }
-                    let lexeme = self.generate_lexeme();
-                    if let Some(token_kind) = self.keywords.get(&lexeme) {
-                        match token_kind {
-                            TokenKind::True => Ok(Some(Token::new(
-                                token_kind.clone(),
-                                lexeme,
-                                Some(Object::Boolean(true)),
-                                self.current_position.clone(),
-                            ))),
-                            TokenKind::False => Ok(Some(Token::new(
-                                token_kind.clone(),
-                                lexeme,
-                                Some(Object::Boolean(false)),
-                                self.current_position.clone(),
-                            ))),
-                            TokenKind::Nil => Ok(Some(Token::new(
-                                token_kind.clone(),
-                                lexeme,
-                                Some(Object::Nil),
-                                self.current_position.clone(),
-                            ))),
-                            _ => Ok(Some(Token::new(
-                                token_kind.clone(),
-                                lexeme,
-                                None,
-                                self.current_position.clone(),
-                            ))),
-                        }
-                    } else {
-                        Ok(Some(Token::new(
-                            TokenKind::Identifier,
-                            lexeme,
-                            None,
-                            self.current_position.clone(),
-                        )))
-                    }
+                    self.make_indetifier()
                 } else if current_char.is_ascii_digit() {
-                    while self.current_charecter().is_ascii_digit() {
-                        self.advance_current_index();
-                    }
-                    if self.current_charecter() == '.' {
-                        self.advance_current_index();
-                        while self.current_charecter().is_ascii_digit() {
-                            self.advance_current_index();
-                        }
-                    }
-                    let lexeme = self.generate_lexeme();
-                    if let Ok(num) = lexeme.parse() {
-                        Ok(Some(Token::new(
-                            TokenKind::Number,
-                            lexeme,
-                            Some(Object::Number(num)),
-                            self.current_position.clone(),
-                        )))
-                    } else {
-                        Err(self
-                            .generate_error(format!("Could not convert `{lexeme}` to `Number`")))
-                    }
+                    self.make_number()
                 } else if current_char == '"' {
-                    while self.current_charecter() != '"' && self.index_in_bound() {
-                        self.advance_current_index();
-                    }
-                    if self.current_charecter() == '"' {
-                        self.advance_current_index();
-                        let lexeme: String = self.source
-                            [self.start_index + 1..self.current_index - 1]
-                            .iter()
-                            .collect();
-                        Ok(Some(Token::new(
-                            TokenKind::String,
-                            lexeme.clone(),
-                            Some(Object::String(lexeme)),
-                            self.current_position.clone(),
-                        )))
-                    } else {
-                        Err(self.generate_error(format!(
-                            "Unterminated string, expected `\"` after `{}`",
-                            self.current_charecter()
-                        )))
-                    }
+                    self.make_string()
                 } else {
                     Err(self.generate_error(format!("Unrecognized charecter `{current_char}`")))
                 }
             }
+        }
+    }
+
+    fn make_indetifier(&mut self) -> Result<Option<Token>, Error> {
+        while self.current_charecter().is_ascii_alphanumeric() || self.current_charecter() == '_' {
+            self.advance_current_index();
+        }
+        let lexeme = self.generate_lexeme();
+        if let Some(token_kind) = self.keywords.get(&lexeme) {
+            match token_kind {
+                TokenKind::True => Ok(Some(Token::new(
+                    token_kind.clone(),
+                    lexeme,
+                    Some(Object::Boolean(true)),
+                    self.current_position.clone(),
+                ))),
+                TokenKind::False => Ok(Some(Token::new(
+                    token_kind.clone(),
+                    lexeme,
+                    Some(Object::Boolean(false)),
+                    self.current_position.clone(),
+                ))),
+                TokenKind::Nil => Ok(Some(Token::new(
+                    token_kind.clone(),
+                    lexeme,
+                    Some(Object::Nil),
+                    self.current_position.clone(),
+                ))),
+                _ => Ok(Some(Token::new(
+                    token_kind.clone(),
+                    lexeme,
+                    None,
+                    self.current_position.clone(),
+                ))),
+            }
+        } else {
+            Ok(Some(Token::new(
+                TokenKind::Identifier,
+                lexeme,
+                None,
+                self.current_position.clone(),
+            )))
+        }
+    }
+
+    fn make_number(&mut self) -> Result<Option<Token>, Error> {
+        while self.current_charecter().is_ascii_digit() {
+            self.advance_current_index();
+        }
+        if self.current_charecter() == '.' {
+            self.advance_current_index();
+            while self.current_charecter().is_ascii_digit() {
+                self.advance_current_index();
+            }
+        }
+        let lexeme = self.generate_lexeme();
+        if let Ok(num) = lexeme.parse() {
+            Ok(Some(Token::new(
+                TokenKind::Number,
+                lexeme,
+                Some(Object::Number(num)),
+                self.current_position.clone(),
+            )))
+        } else {
+            Err(self.generate_error(format!("Could not convert `{lexeme}` to `Number`")))
+        }
+    }
+
+    fn make_string(&mut self) -> Result<Option<Token>, Error> {
+        while self.current_charecter() != '"' && self.index_in_bound() {
+            self.advance_current_index();
+        }
+        if self.current_charecter() == '"' {
+            self.advance_current_index();
+            let lexeme: String = self.source[self.start_index + 1..self.current_index - 1]
+                .iter()
+                .collect();
+            Ok(Some(Token::new(
+                TokenKind::String,
+                lexeme.clone(),
+                Some(Object::String(lexeme)),
+                self.current_position.clone(),
+            )))
+        } else {
+            Err(self.generate_error(format!(
+                "Unterminated string, expected `\"` after `{}`",
+                self.current_charecter()
+            )))
         }
     }
 

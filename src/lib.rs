@@ -63,7 +63,7 @@ fn run_repl() -> Result<(), Error> {
     let mut environment = Environment::new(None);
 
     loop {
-        print!("Indu :> ");
+        print!("=> ");
         stdout().flush().or(Err(Error::new(
             ErrorKind::SystemError,
             "Could not flush stdout".to_string(),
