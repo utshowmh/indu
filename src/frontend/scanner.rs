@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::common::{
     error::{Error, ErrorKind},
-    object::Object,
     position::Position,
     token::{Token, TokenKind},
 };
@@ -45,7 +44,6 @@ impl Scanner {
         tokens.push(Token::new(
             TokenKind::EOF,
             String::from("\0"),
-            None,
             self.current_position.clone(),
         ));
 
@@ -65,19 +63,16 @@ impl Scanner {
             '+' => Ok(Some(Token::new(
                 TokenKind::Plus,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
             '-' => Ok(Some(Token::new(
                 TokenKind::Minus,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
             '*' => Ok(Some(Token::new(
                 TokenKind::Star,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
             '/' => {
@@ -90,7 +85,6 @@ impl Scanner {
                     Ok(Some(Token::new(
                         TokenKind::Slash,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 }
@@ -99,37 +93,31 @@ impl Scanner {
             '(' => Ok(Some(Token::new(
                 TokenKind::OpenParen,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
             ')' => Ok(Some(Token::new(
                 TokenKind::CloseParen,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
             '{' => Ok(Some(Token::new(
                 TokenKind::OpenBrace,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
             '}' => Ok(Some(Token::new(
                 TokenKind::CloseBrace,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
             ',' => Ok(Some(Token::new(
                 TokenKind::Comma,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
             '.' => Ok(Some(Token::new(
                 TokenKind::Dot,
                 self.generate_lexeme(),
-                None,
                 self.current_position.clone(),
             ))),
 
@@ -139,14 +127,12 @@ impl Scanner {
                     Ok(Some(Token::new(
                         TokenKind::Equal,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 } else {
                     Ok(Some(Token::new(
                         TokenKind::Assign,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 }
@@ -158,14 +144,12 @@ impl Scanner {
                     Ok(Some(Token::new(
                         TokenKind::NotEqual,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 } else {
                     Ok(Some(Token::new(
                         TokenKind::Not,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 }
@@ -177,14 +161,12 @@ impl Scanner {
                     Ok(Some(Token::new(
                         TokenKind::GreaterEqual,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 } else {
                     Ok(Some(Token::new(
                         TokenKind::Greater,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 }
@@ -196,14 +178,12 @@ impl Scanner {
                     Ok(Some(Token::new(
                         TokenKind::LesserEqual,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 } else {
                     Ok(Some(Token::new(
                         TokenKind::Lesser,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 }
@@ -215,7 +195,6 @@ impl Scanner {
                     Ok(Some(Token::new(
                         TokenKind::And,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 } else {
@@ -229,7 +208,6 @@ impl Scanner {
                     Ok(Some(Token::new(
                         TokenKind::Or,
                         self.generate_lexeme(),
-                        None,
                         self.current_position.clone(),
                     )))
                 } else {
@@ -261,25 +239,21 @@ impl Scanner {
                 TokenKind::True => Ok(Some(Token::new(
                     token_kind.clone(),
                     lexeme,
-                    Some(Object::Boolean(true)),
                     self.current_position.clone(),
                 ))),
                 TokenKind::False => Ok(Some(Token::new(
                     token_kind.clone(),
                     lexeme,
-                    Some(Object::Boolean(false)),
                     self.current_position.clone(),
                 ))),
                 TokenKind::Nil => Ok(Some(Token::new(
                     token_kind.clone(),
                     lexeme,
-                    Some(Object::Nil),
                     self.current_position.clone(),
                 ))),
                 _ => Ok(Some(Token::new(
                     token_kind.clone(),
                     lexeme,
-                    None,
                     self.current_position.clone(),
                 ))),
             }
@@ -287,7 +261,6 @@ impl Scanner {
             Ok(Some(Token::new(
                 TokenKind::Identifier,
                 lexeme,
-                None,
                 self.current_position.clone(),
             )))
         }
@@ -304,11 +277,10 @@ impl Scanner {
             }
         }
         let lexeme = self.generate_lexeme();
-        if let Ok(num) = lexeme.parse() {
+        if let Ok(_) = lexeme.parse::<f64>() {
             Ok(Some(Token::new(
                 TokenKind::Number,
                 lexeme,
-                Some(Object::Number(num)),
                 self.current_position.clone(),
             )))
         } else {
@@ -328,7 +300,6 @@ impl Scanner {
             Ok(Some(Token::new(
                 TokenKind::String,
                 lexeme.clone(),
-                Some(Object::String(lexeme)),
                 self.current_position.clone(),
             )))
         } else {

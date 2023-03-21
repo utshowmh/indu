@@ -2,8 +2,8 @@ use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, ElseStatement,
         Expression, ExpressionStatement, FunctionStatement, GroupExpression, IfStatement,
-        LiteralExpression, ReturnStatement, Statement, UnaryExpression, VariableExpression,
-        VariableStatement, WhileStatement,
+        LiteralExpression, Program, ReturnStatement, Statement, UnaryExpression,
+        VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -22,7 +22,7 @@ impl Parser {
         }
     }
 
-    pub(crate) fn parse(&mut self) -> Result<Vec<Statement>, Error> {
+    pub(crate) fn parse(&mut self) -> Result<Program, Error> {
         let mut statements = Vec::new();
 
         while self.index_in_bound() && !self.current_token_is_eof() {

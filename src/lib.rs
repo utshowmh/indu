@@ -1,6 +1,6 @@
+mod backend;
 mod common;
 mod frontend;
-mod runtime;
 
 use std::{
     env::args,
@@ -8,17 +8,15 @@ use std::{
     io::{stdin, stdout, Write},
 };
 
+use backend::vm::VirtualMachine;
 use common::error::{Error, ErrorKind};
-use runtime::environment::Environment;
+use frontend::compiler::Compiler;
 
-use crate::{
-    frontend::{parser::Parser, scanner::Scanner},
-    runtime::interpreter::Interpreter,
-};
+use crate::frontend::{parser::Parser, scanner::Scanner};
 
 const COMMANDS: &str = "\
 #cmd        ->  prints available commands.
-#env        ->  shows environment (variable bindings).
+#dbg        ->  runs a debugger for the vm.
 ";
 
 pub fn start() {
@@ -44,10 +42,15 @@ fn run_file(source_path: &str) -> Result<(), Error> {
         let tokens = scanner.scan()?;
 
         let mut parser = Parser::new(tokens);
-        let expression = parser.parse()?;
+        let program = parser.parse()?;
 
-        let mut interpreter = Interpreter::new(Environment::new(None));
-        interpreter.interpret(expression)
+        let mut compiler = Compiler::new();
+        let chunk = compiler.compile(program)?;
+
+        let mut vm = VirtualMachine::new();
+        vm.interpret(&chunk, false)?;
+
+        Ok(())
     } else {
         Err(Error::new(
             ErrorKind::SystemError,
@@ -60,7 +63,7 @@ fn run_file(source_path: &str) -> Result<(), Error> {
 fn run_repl() -> Result<(), Error> {
     println!("Welcome to Indu REPL. Type  `#cmd` to see available commands.\n");
 
-    let mut environment = Environment::new(None);
+    let mut debug = false;
 
     loop {
         print!("=> ");
@@ -80,9 +83,8 @@ fn run_repl() -> Result<(), Error> {
         if line.starts_with('#') {
             match line {
                 "#cmd" => print!("{COMMANDS}"),
-                "#env" => {
-                    println!("Environment:");
-                    print!("{environment}");
+                "#dbg" => {
+                    debug = true;
                 }
                 "#exit" => {
                     println!("Exiting Indu REPL.");
@@ -103,17 +105,16 @@ fn run_repl() -> Result<(), Error> {
         });
 
         let mut parser = Parser::new(tokens);
-        let expression = parser.parse().unwrap_or_else(|error| {
+        let program = parser.parse().unwrap_or_else(|error| {
             error.report();
             Vec::new()
         });
 
-        let mut interpreter = Interpreter::new(environment.clone());
-        interpreter.interpret(expression).unwrap_or_else(|error| {
-            error.report();
-        });
+        let mut compiler = Compiler::new();
+        let chunk = compiler.compile(program)?;
 
-        environment = interpreter.environment.clone();
+        let mut vm = VirtualMachine::new();
+        vm.interpret(&chunk, debug)?;
     }
 
     Ok(())

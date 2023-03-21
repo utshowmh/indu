@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result};
 
-use super::{object::Object, position::Position};
+use super::position::Position;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum TokenKind {
@@ -98,21 +98,14 @@ impl Display for TokenKind {
 pub(crate) struct Token {
     pub(crate) kind: TokenKind,
     pub(crate) lexeme: String,
-    pub(crate) literal: Option<Object>,
     pub(crate) position: Position,
 }
 
 impl Token {
-    pub(crate) fn new(
-        kind: TokenKind,
-        lexeme: String,
-        literal: Option<Object>,
-        position: Position,
-    ) -> Self {
+    pub(crate) fn new(kind: TokenKind, lexeme: String, position: Position) -> Self {
         Self {
             kind,
             lexeme,
-            literal,
             position,
         }
     }
