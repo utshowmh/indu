@@ -20,4 +20,7 @@ pub(crate) enum Instruction {
     GreaterEqual,
     Lesser,
     LesserEqual,
+
+    And,
+    Or,
 }

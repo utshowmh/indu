@@ -307,6 +307,36 @@ impl VirtualMachine {
                         }
                     };
                 }
+
+                Instruction::And => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    self.stack
+                        .push(Value::Boolean(a.is_truthy() && b.is_truthy()))
+                }
+
+                Instruction::Or => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    self.stack
+                        .push(Value::Boolean(a.is_truthy() || b.is_truthy()))
+                }
             }
         }
 

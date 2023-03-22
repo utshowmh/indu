@@ -51,6 +51,9 @@ impl Chunk {
             Instruction::GreaterEqual => self.debug_simple_instruction("geq", instruction_index),
             Instruction::Lesser => self.debug_simple_instruction("le", instruction_index),
             Instruction::LesserEqual => self.debug_simple_instruction("leq", instruction_index),
+
+            Instruction::And => self.debug_simple_instruction("and", instruction_index),
+            Instruction::Or => self.debug_simple_instruction("or", instruction_index),
         };
     }
 
