@@ -66,6 +66,12 @@ impl Compiler {
             TokenKind::Slash => self
                 .chunk
                 .add_instruction(Instruction::Divide, expression.operator.position),
+            TokenKind::Equal => todo!(),
+            TokenKind::NotEqual => todo!(),
+            TokenKind::Greater => todo!(),
+            TokenKind::GreaterEqual => todo!(),
+            TokenKind::Lesser => todo!(),
+            TokenKind::LesserEqual => todo!(),
             _ => {
                 return Err(Error::new(
                     ErrorKind::CompilerError,
@@ -79,12 +85,15 @@ impl Compiler {
     }
 
     fn compile_unary_expression(&mut self, expression: UnaryExpression) -> Result<(), Error> {
+        self.compile_expression(*expression.right)?;
         match expression.operator.kind {
-            TokenKind::Minus => {
-                self.compile_expression(*expression.right)?;
-                self.chunk
-                    .add_instruction(Instruction::Negate, expression.operator.position);
-            }
+            TokenKind::Minus => self
+                .chunk
+                .add_instruction(Instruction::Negate, expression.operator.position),
+
+            TokenKind::Not => self
+                .chunk
+                .add_instruction(Instruction::Not, expression.operator.position),
             _ => {
                 return Err(Error::new(
                     ErrorKind::CompilerError,
@@ -98,7 +107,10 @@ impl Compiler {
     }
 
     fn compile_literal_expression(&mut self, expression: LiteralExpression) -> Result<(), Error> {
-        if expression.value.kind == TokenKind::Number {
+        if expression.value.kind == TokenKind::Nil {
+            self.chunk
+                .add_instruction(Instruction::Constatnt(Value::Nil), expression.position())
+        } else if expression.value.kind == TokenKind::Number {
             self.chunk.add_instruction(
                 Instruction::Constatnt(Value::Number(expression.value.lexeme.parse().unwrap())), // We're making sure it's a number (f64) in scanner.
                 expression.position(),

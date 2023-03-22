@@ -38,6 +38,8 @@ impl Chunk {
             }
 
             Instruction::Negate => self.debug_simple_instruction("neg", instruction_index),
+            Instruction::Not => self.debug_simple_instruction("not", instruction_index),
+
             Instruction::Add => self.debug_simple_instruction("add", instruction_index),
             Instruction::Subtract => self.debug_simple_instruction("sub", instruction_index),
             Instruction::Multiply => self.debug_simple_instruction("mul", instruction_index),

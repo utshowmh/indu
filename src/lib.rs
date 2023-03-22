@@ -114,7 +114,9 @@ fn run_repl() -> Result<(), Error> {
         let chunk = compiler.compile(program)?;
 
         let mut vm = VirtualMachine::new();
-        vm.interpret(chunk, debug)?;
+        vm.interpret(chunk, debug).unwrap_or_else(|error| {
+            error.report();
+        });
     }
 
     Ok(())

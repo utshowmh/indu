@@ -63,6 +63,23 @@ impl VirtualMachine {
                     }
                 }
 
+                Instruction::Not => {
+                    let value = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    if let Value::Boolean(bool) = value {
+                        self.stack.push(Value::Boolean(!bool));
+                    } else {
+                        return Err(Error::new(
+                            ErrorKind::RuntimeError,
+                            format!("`!` is not defined for `{value}`"),
+                            Some(chunk.get_position(self.ip - 1)),
+                        ));
+                    }
+                }
+
                 Instruction::Add => {
                     let b = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
