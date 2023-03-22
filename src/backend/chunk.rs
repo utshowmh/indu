@@ -44,6 +44,13 @@ impl Chunk {
             Instruction::Subtract => self.debug_simple_instruction("sub", instruction_index),
             Instruction::Multiply => self.debug_simple_instruction("mul", instruction_index),
             Instruction::Divide => self.debug_simple_instruction("div", instruction_index),
+
+            Instruction::Equal => self.debug_simple_instruction("eq", instruction_index),
+            Instruction::NotEqual => self.debug_simple_instruction("neq", instruction_index),
+            Instruction::Greater => self.debug_simple_instruction("ge", instruction_index),
+            Instruction::GreaterEqual => self.debug_simple_instruction("geq", instruction_index),
+            Instruction::Lesser => self.debug_simple_instruction("le", instruction_index),
+            Instruction::LesserEqual => self.debug_simple_instruction("leq", instruction_index),
         };
     }
 

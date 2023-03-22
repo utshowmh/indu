@@ -13,4 +13,11 @@ pub(crate) enum Instruction {
     Subtract,
     Multiply,
     Divide,
+
+    Equal,
+    NotEqual,
+    Greater,
+    GreaterEqual,
+    Lesser,
+    LesserEqual,
 }

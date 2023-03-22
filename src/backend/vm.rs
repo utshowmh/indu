@@ -179,6 +179,134 @@ impl VirtualMachine {
                         }
                     };
                 }
+
+                Instruction::Equal => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    self.stack.push(Value::Boolean(a == b));
+                }
+
+                Instruction::NotEqual => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    self.stack.push(Value::Boolean(a != b));
+                }
+
+                Instruction::Greater => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    match (&a, &b) {
+                        (Value::Number(a), Value::Number(b)) => {
+                            self.stack.push(Value::Boolean(a > b));
+                        }
+                        _ => {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`>` is not defined for `{a}` and `{b}`"),
+                                Some(chunk.get_position(self.ip - 1)),
+                            ))
+                        }
+                    };
+                }
+
+                Instruction::GreaterEqual => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    match (&a, &b) {
+                        (Value::Number(a), Value::Number(b)) => {
+                            self.stack.push(Value::Boolean(a >= b));
+                        }
+                        _ => {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`>=` is not defined for `{a}` and `{b}`"),
+                                Some(chunk.get_position(self.ip - 1)),
+                            ))
+                        }
+                    };
+                }
+
+                Instruction::Lesser => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    match (&a, &b) {
+                        (Value::Number(a), Value::Number(b)) => {
+                            self.stack.push(Value::Boolean(a < b));
+                        }
+                        _ => {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`<` is not defined for `{a}` and `{b}`"),
+                                Some(chunk.get_position(self.ip - 1)),
+                            ))
+                        }
+                    };
+                }
+
+                Instruction::LesserEqual => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        Some(chunk.get_position(self.ip - 1)),
+                    ))?;
+                    match (&a, &b) {
+                        (Value::Number(a), Value::Number(b)) => {
+                            self.stack.push(Value::Boolean(a <= b));
+                        }
+                        _ => {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`<=` is not defined for `{a}` and `{b}`"),
+                                Some(chunk.get_position(self.ip - 1)),
+                            ))
+                        }
+                    };
+                }
             }
         }
 

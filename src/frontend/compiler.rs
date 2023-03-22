@@ -66,12 +66,25 @@ impl Compiler {
             TokenKind::Slash => self
                 .chunk
                 .add_instruction(Instruction::Divide, expression.operator.position),
-            TokenKind::Equal => todo!(),
-            TokenKind::NotEqual => todo!(),
-            TokenKind::Greater => todo!(),
-            TokenKind::GreaterEqual => todo!(),
-            TokenKind::Lesser => todo!(),
-            TokenKind::LesserEqual => todo!(),
+
+            TokenKind::Equal => self
+                .chunk
+                .add_instruction(Instruction::Equal, expression.operator.position),
+            TokenKind::NotEqual => self
+                .chunk
+                .add_instruction(Instruction::NotEqual, expression.operator.position),
+            TokenKind::Greater => self
+                .chunk
+                .add_instruction(Instruction::Greater, expression.operator.position),
+            TokenKind::GreaterEqual => self
+                .chunk
+                .add_instruction(Instruction::GreaterEqual, expression.operator.position),
+            TokenKind::Lesser => self
+                .chunk
+                .add_instruction(Instruction::Lesser, expression.operator.position),
+            TokenKind::LesserEqual => self
+                .chunk
+                .add_instruction(Instruction::LesserEqual, expression.operator.position),
             _ => {
                 return Err(Error::new(
                     ErrorKind::CompilerError,
