@@ -1,38 +1,46 @@
-use super::types::Value;
 use crate::common::{
     error::{Error, ErrorKind},
     position::Position,
+    types::Value,
 };
 
 use super::instruction::Instruction;
 
 // Sequence of Instruction
-#[derive(Clone)]
 pub(crate) struct Chunk {
     instructions: Vec<Instruction>,
-    lines: Vec<Position>,
+    positions: Vec<Position>,
 }
 
 impl Chunk {
     pub(crate) fn new() -> Self {
         Self {
             instructions: Vec::new(),
-            lines: Vec::new(),
+            positions: Vec::new(),
         }
     }
 
-    pub(crate) fn add_instruction(&mut self, instruction: Instruction, line: Position) {
+    pub(crate) fn add_instruction(&mut self, instruction: Instruction, position: Position) {
         self.instructions.push(instruction);
-        self.lines.push(line);
+        self.positions.push(position);
     }
 
     pub(crate) fn get_instruction(&self, instruction_index: usize) -> Result<Instruction, Error> {
         let instruction = self.instructions.get(instruction_index).ok_or(Error::new(
             ErrorKind::RuntimeError,
-            format!("Invalid instruction index"),
+            "Invalid instruction index".to_string(),
             None,
         ))?;
         Ok(instruction.clone())
+    }
+
+    pub(crate) fn get_position(&self, position_index: usize) -> Result<Position, Error> {
+        let position = self.positions.get(position_index).ok_or(Error::new(
+            ErrorKind::RuntimeError,
+            "Invalid instruction index".to_string(),
+            None,
+        ))?;
+        Ok(position.clone())
     }
 
     pub(crate) fn debug_instruction(&self, instruction_index: usize) -> Result<(), Error> {
@@ -56,7 +64,7 @@ impl Chunk {
     fn debug_simple_instruction(&self, instruction_name: &str, instruction_index: usize) {
         println!(
             "{:04} {} {}",
-            instruction_index, self.lines[instruction_index].line, instruction_name,
+            instruction_index, self.positions[instruction_index].line, instruction_name,
         );
     }
 
@@ -66,8 +74,8 @@ impl Chunk {
         value: Value,
     ) -> Result<(), Error> {
         println!(
-            "{:04} {} {} '{}'",
-            instruction_index, self.lines[instruction_index].line, "const", value
+            "{:04} {} const '{}'",
+            instruction_index, self.positions[instruction_index].line, value
         );
         Ok(())
     }

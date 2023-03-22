@@ -7,6 +7,7 @@ use crate::{
         error::{Error, ErrorKind},
         position::Position,
         token::TokenKind,
+        types::Value,
     },
 };
 
@@ -21,13 +22,13 @@ impl Compiler {
         }
     }
 
-    pub(crate) fn compile(&mut self, program: Program) -> Result<Chunk, Error> {
+    pub(crate) fn compile(&mut self, program: Program) -> Result<&Chunk, Error> {
         for statement in program {
             self.compile_statement(statement)?;
         }
         self.chunk
             .add_instruction(Instruction::Return, Position::new(0, 0));
-        Ok(self.chunk.clone())
+        Ok(&self.chunk)
     }
 
     fn compile_statement(&mut self, statement: Statement) -> Result<(), Error> {
@@ -98,7 +99,7 @@ impl Compiler {
 
     fn compile_literal_expression(&mut self, expression: LiteralExpression) -> Result<(), Error> {
         self.chunk.add_instruction(
-            Instruction::Constatnt(expression.value.lexeme.parse().unwrap()), // We're making sure it's a number (f64) in scanner.
+            Instruction::Constatnt(Value::Number(expression.value.lexeme.parse().unwrap())), // We're making sure it's a number (f64) in scanner.
             expression.position(),
         );
         Ok(())

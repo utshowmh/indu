@@ -277,7 +277,7 @@ impl Scanner {
             }
         }
         let lexeme = self.generate_lexeme();
-        if let Ok(_) = lexeme.parse::<f64>() {
+        if lexeme.parse::<f64>().is_ok() {
             Ok(Some(Token::new(
                 TokenKind::Number,
                 lexeme,
@@ -299,7 +299,7 @@ impl Scanner {
                 .collect();
             Ok(Some(Token::new(
                 TokenKind::String,
-                lexeme.clone(),
+                lexeme,
                 self.current_position.clone(),
             )))
         } else {

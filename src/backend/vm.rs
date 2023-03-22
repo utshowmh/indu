@@ -1,6 +1,9 @@
-use crate::common::error::{Error, ErrorKind};
+use crate::common::{
+    error::{Error, ErrorKind},
+    types::Value,
+};
 
-use super::{chunk::Chunk, instruction::Instruction, types::Value};
+use super::{chunk::Chunk, instruction::Instruction};
 
 pub(crate) struct VirtualMachine {
     ip: usize,
@@ -30,7 +33,7 @@ impl VirtualMachine {
                 Instruction::Return => {
                     let value = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
-                        format!("Stack underflow"),
+                        "Stack underflow".to_string(),
                         None,
                     ))?;
                     println!("{value}");
@@ -40,15 +43,111 @@ impl VirtualMachine {
                 Instruction::Negate => {
                     let value = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
-                        format!("Stack underflow"),
+                        "Stack underflow".to_string(),
                         None,
                     ))?;
-                    self.stack.push(-value);
+                    if let Value::Number(num) = value {
+                        self.stack.push(Value::Number(-num));
+                    } else {
+                        panic!()
+                    }
                 }
-                Instruction::Add => self.binary_operation(|a, b| a + b)?,
-                Instruction::Subtract => self.binary_operation(|a, b| a - b)?,
-                Instruction::Multiply => self.binary_operation(|a, b| a * b)?,
-                Instruction::Divide => self.binary_operation(|a, b| a / b)?,
+                Instruction::Add => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        None,
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        None,
+                    ))?;
+                    match (&a, &b) {
+                        (Value::Number(a), Value::Number(b)) => {
+                            self.stack.push(Value::Number(a + b))
+                        }
+                        _ => {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`+` is not defined for {a} and {b}"),
+                                Some(chunk.get_position(self.ip)?),
+                            ))
+                        }
+                    };
+                }
+                Instruction::Subtract => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        None,
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        None,
+                    ))?;
+                    match (&a, &b) {
+                        (Value::Number(a), Value::Number(b)) => {
+                            self.stack.push(Value::Number(a - b))
+                        }
+                        _ => {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`-` is not defined for {a} and {b}"),
+                                Some(chunk.get_position(self.ip)?),
+                            ))
+                        }
+                    };
+                }
+                Instruction::Multiply => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        None,
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        None,
+                    ))?;
+                    match (&a, &b) {
+                        (Value::Number(a), Value::Number(b)) => {
+                            self.stack.push(Value::Number(a * b))
+                        }
+                        _ => {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`*` is not defined for {a} and {b}"),
+                                Some(chunk.get_position(self.ip)?),
+                            ))
+                        }
+                    };
+                }
+                Instruction::Divide => {
+                    let b = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        None,
+                    ))?;
+                    let a = self.stack.pop().ok_or(Error::new(
+                        ErrorKind::RuntimeError,
+                        "Stack underflow".to_string(),
+                        None,
+                    ))?;
+                    match (&a, &b) {
+                        (Value::Number(a), Value::Number(b)) => {
+                            self.stack.push(Value::Number(a / b))
+                        }
+                        _ => {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`/` is not defined for {a} and {b}"),
+                                Some(chunk.get_position(self.ip)?),
+                            ))
+                        }
+                    };
+                }
             }
         }
 
@@ -57,24 +156,6 @@ impl VirtualMachine {
 
     fn get_instruction(&mut self, chunk: &Chunk) -> Result<Instruction, Error> {
         self.ip += 1;
-        Ok(chunk.get_instruction(self.ip - 1)?)
-    }
-
-    fn binary_operation(
-        &mut self,
-        operation: fn(a: Value, b: Value) -> Value,
-    ) -> Result<(), Error> {
-        let b = self.stack.pop().ok_or(Error::new(
-            ErrorKind::RuntimeError,
-            format!("Stack underflow"),
-            None,
-        ))?;
-        let a = self.stack.pop().ok_or(Error::new(
-            ErrorKind::RuntimeError,
-            format!("Stack underflow"),
-            None,
-        ))?;
-        self.stack.push(operation(a, b));
-        Ok(())
+        chunk.get_instruction(self.ip - 1)
     }
 }

@@ -1,7 +1,7 @@
-use super::types::Value;
+use crate::common::types::Value;
 
 #[derive(Clone)]
-pub enum Instruction {
+pub(crate) enum Instruction {
     Return,
     Constatnt(Value),
     Negate,
