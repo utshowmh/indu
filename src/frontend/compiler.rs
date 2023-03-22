@@ -98,10 +98,25 @@ impl Compiler {
     }
 
     fn compile_literal_expression(&mut self, expression: LiteralExpression) -> Result<(), Error> {
-        self.chunk.add_instruction(
-            Instruction::Constatnt(Value::Number(expression.value.lexeme.parse().unwrap())), // We're making sure it's a number (f64) in scanner.
-            expression.position(),
-        );
+        if expression.value.kind == TokenKind::Number {
+            self.chunk.add_instruction(
+                Instruction::Constatnt(Value::Number(expression.value.lexeme.parse().unwrap())), // We're making sure it's a number (f64) in scanner.
+                expression.position(),
+            );
+        } else if expression.value.kind == TokenKind::True
+            || expression.value.kind == TokenKind::False
+        {
+            self.chunk.add_instruction(
+                Instruction::Constatnt(Value::Boolean(expression.value.lexeme.parse().unwrap())), // We're making sure it's a true/false in scanner.
+                expression.position(),
+            );
+        } else {
+            self.chunk.add_instruction(
+                Instruction::Constatnt(Value::String(expression.value.lexeme.clone())),
+                expression.position(),
+            );
+        }
+
         Ok(())
     }
 }

@@ -1,8 +1,4 @@
-use crate::common::{
-    error::{Error, ErrorKind},
-    position::Position,
-    types::Value,
-};
+use crate::common::{position::Position, types::Value};
 
 use super::instruction::Instruction;
 
@@ -25,30 +21,20 @@ impl Chunk {
         self.positions.push(position);
     }
 
-    pub(crate) fn get_instruction(&self, instruction_index: usize) -> Result<Instruction, Error> {
-        let instruction = self.instructions.get(instruction_index).ok_or(Error::new(
-            ErrorKind::RuntimeError,
-            "Invalid instruction index".to_string(),
-            None,
-        ))?;
-        Ok(instruction.clone())
+    pub(crate) fn get_instruction(&self, instruction_index: usize) -> Instruction {
+        self.instructions[instruction_index].clone()
     }
 
-    pub(crate) fn get_position(&self, position_index: usize) -> Result<Position, Error> {
-        let position = self.positions.get(position_index).ok_or(Error::new(
-            ErrorKind::RuntimeError,
-            "Invalid instruction index".to_string(),
-            None,
-        ))?;
-        Ok(position.clone())
+    pub(crate) fn get_position(&self, position_index: usize) -> Position {
+        self.positions[position_index].clone()
     }
 
-    pub(crate) fn debug_instruction(&self, instruction_index: usize) -> Result<(), Error> {
-        let instruction = self.get_instruction(instruction_index)?;
+    pub(crate) fn debug_instruction(&self, instruction_index: usize) {
+        let instruction = self.get_instruction(instruction_index);
         match instruction {
             Instruction::Return => self.debug_simple_instruction("ret", instruction_index),
             Instruction::Constatnt(value) => {
-                self.debug_constant_instruction(instruction_index, value)?
+                self.debug_constant_instruction(instruction_index, value);
             }
 
             Instruction::Negate => self.debug_simple_instruction("neg", instruction_index),
@@ -57,8 +43,6 @@ impl Chunk {
             Instruction::Multiply => self.debug_simple_instruction("mul", instruction_index),
             Instruction::Divide => self.debug_simple_instruction("div", instruction_index),
         };
-
-        Ok(())
     }
 
     fn debug_simple_instruction(&self, instruction_name: &str, instruction_index: usize) {
@@ -68,16 +52,11 @@ impl Chunk {
         );
     }
 
-    fn debug_constant_instruction(
-        &self,
-        instruction_index: usize,
-        value: Value,
-    ) -> Result<(), Error> {
+    fn debug_constant_instruction(&self, instruction_index: usize, value: Value) {
         println!(
             "{:04} {} const '{}'",
             instruction_index, self.positions[instruction_index].line, value
         );
-        Ok(())
     }
 
     pub(crate) fn ip_is_valid(&self, ip: usize) -> bool {

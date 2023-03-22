@@ -25,43 +25,54 @@ impl VirtualMachine {
     fn run(&mut self, chunk: &Chunk, debug: bool) -> Result<(), Error> {
         while chunk.ip_is_valid(self.ip) {
             if debug {
-                println!("stack: {:?}", self.stack);
-                chunk.debug_instruction(self.ip)?;
+                print!("statck [");
+                for value in &self.stack {
+                    print!(" {value},");
+                }
+                println!(" ]");
+                chunk.debug_instruction(self.ip);
             }
 
-            match self.get_instruction(chunk)? {
+            match self.get_instruction(chunk) {
                 Instruction::Return => {
                     let value = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     println!("{value}");
                     break;
                 }
+
                 Instruction::Constatnt(value) => self.stack.push(value),
+
                 Instruction::Negate => {
                     let value = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     if let Value::Number(num) = value {
                         self.stack.push(Value::Number(-num));
                     } else {
-                        panic!()
+                        return Err(Error::new(
+                            ErrorKind::RuntimeError,
+                            format!("`-` is not defined for `{value}`"),
+                            Some(chunk.get_position(self.ip - 1)),
+                        ));
                     }
                 }
+
                 Instruction::Add => {
                     let b = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     let a = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
@@ -70,22 +81,23 @@ impl VirtualMachine {
                         _ => {
                             return Err(Error::new(
                                 ErrorKind::RuntimeError,
-                                format!("`+` is not defined for {a} and {b}"),
-                                Some(chunk.get_position(self.ip)?),
+                                format!("`+` is not defined for `{a}` and `{b}`"),
+                                Some(chunk.get_position(self.ip - 1)),
                             ))
                         }
                     };
                 }
+
                 Instruction::Subtract => {
                     let b = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     let a = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
@@ -94,22 +106,23 @@ impl VirtualMachine {
                         _ => {
                             return Err(Error::new(
                                 ErrorKind::RuntimeError,
-                                format!("`-` is not defined for {a} and {b}"),
-                                Some(chunk.get_position(self.ip)?),
+                                format!("`-` is not defined for `{a}` and `{b}`"),
+                                Some(chunk.get_position(self.ip - 1)),
                             ))
                         }
                     };
                 }
+
                 Instruction::Multiply => {
                     let b = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     let a = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
@@ -118,22 +131,23 @@ impl VirtualMachine {
                         _ => {
                             return Err(Error::new(
                                 ErrorKind::RuntimeError,
-                                format!("`*` is not defined for {a} and {b}"),
-                                Some(chunk.get_position(self.ip)?),
+                                format!("`*` is not defined for `{a}` and `{b}`"),
+                                Some(chunk.get_position(self.ip - 1)),
                             ))
                         }
                     };
                 }
+
                 Instruction::Divide => {
                     let b = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     let a = self.stack.pop().ok_or(Error::new(
                         ErrorKind::RuntimeError,
                         "Stack underflow".to_string(),
-                        None,
+                        Some(chunk.get_position(self.ip - 1)),
                     ))?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
@@ -142,8 +156,8 @@ impl VirtualMachine {
                         _ => {
                             return Err(Error::new(
                                 ErrorKind::RuntimeError,
-                                format!("`/` is not defined for {a} and {b}"),
-                                Some(chunk.get_position(self.ip)?),
+                                format!("`/` is not defined for `{a}` and `{b}`"),
+                                Some(chunk.get_position(self.ip - 1)),
                             ))
                         }
                     };
@@ -154,7 +168,7 @@ impl VirtualMachine {
         Ok(())
     }
 
-    fn get_instruction(&mut self, chunk: &Chunk) -> Result<Instruction, Error> {
+    fn get_instruction(&mut self, chunk: &Chunk) -> Instruction {
         self.ip += 1;
         chunk.get_instruction(self.ip - 1)
     }

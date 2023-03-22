@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) enum Value {
     Boolean(bool),
     Number(f64),
