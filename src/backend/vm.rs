@@ -35,11 +35,7 @@ impl VirtualMachine {
 
             match self.get_instruction(chunk) {
                 Instruction::Return => {
-                    let value = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let value = self.pop_stack(chunk)?;
                     println!("{value}");
                     break;
                 }
@@ -47,11 +43,7 @@ impl VirtualMachine {
                 Instruction::Constatnt(value) => self.stack.push(value),
 
                 Instruction::Negate => {
-                    let value = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let value = self.pop_stack(chunk)?;
                     if let Value::Number(num) = value {
                         self.stack.push(Value::Number(-num));
                     } else {
@@ -64,11 +56,7 @@ impl VirtualMachine {
                 }
 
                 Instruction::Not => {
-                    let value = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let value = self.pop_stack(chunk)?;
                     if let Value::Boolean(bool) = value {
                         self.stack.push(Value::Boolean(!bool));
                     } else {
@@ -81,19 +69,14 @@ impl VirtualMachine {
                 }
 
                 Instruction::Add => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
                             self.stack.push(Value::Number(a + b))
+                        }
+                        (Value::String(a), Value::String(b)) => {
+                            self.stack.push(Value::String(format!("{a}{b}")))
                         }
                         _ => {
                             return Err(Error::new(
@@ -106,16 +89,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::Subtract => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
                             self.stack.push(Value::Number(a - b))
@@ -131,16 +106,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::Multiply => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
                             self.stack.push(Value::Number(a * b))
@@ -156,18 +123,17 @@ impl VirtualMachine {
                 }
 
                 Instruction::Divide => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
+                            if b == &0. {
+                                return Err(Error::new(
+                                    ErrorKind::RuntimeError,
+                                    "Division by 0".to_string(),
+                                    Some(chunk.get_position(self.ip - 1)),
+                                ));
+                            }
                             self.stack.push(Value::Number(a / b))
                         }
                         _ => {
@@ -181,47 +147,23 @@ impl VirtualMachine {
                 }
 
                 Instruction::Equal => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     self.stack.push(Value::Boolean(a == b));
                 }
 
                 Instruction::NotEqual => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     self.stack.push(Value::Boolean(a != b));
                 }
 
                 Instruction::Greater => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Boolean(a > b));
+                            self.stack.push(Value::Boolean(a > b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -234,19 +176,11 @@ impl VirtualMachine {
                 }
 
                 Instruction::GreaterEqual => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Boolean(a >= b));
+                            self.stack.push(Value::Boolean(a >= b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -259,16 +193,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::Lesser => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
                             self.stack.push(Value::Boolean(a < b));
@@ -284,19 +210,11 @@ impl VirtualMachine {
                 }
 
                 Instruction::LesserEqual => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
                         (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Boolean(a <= b));
+                            self.stack.push(Value::Boolean(a <= b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -309,31 +227,15 @@ impl VirtualMachine {
                 }
 
                 Instruction::And => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     self.stack
                         .push(Value::Boolean(a.is_truthy() && b.is_truthy()))
                 }
 
                 Instruction::Or => {
-                    let b = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
-                    let a = self.stack.pop().ok_or(Error::new(
-                        ErrorKind::RuntimeError,
-                        "Stack underflow".to_string(),
-                        Some(chunk.get_position(self.ip - 1)),
-                    ))?;
+                    let b = self.pop_stack(chunk)?;
+                    let a = self.pop_stack(chunk)?;
                     self.stack
                         .push(Value::Boolean(a.is_truthy() || b.is_truthy()))
                 }
@@ -341,6 +243,14 @@ impl VirtualMachine {
         }
 
         Ok(())
+    }
+
+    fn pop_stack(&mut self, chunk: &Chunk) -> Result<Value, Error> {
+        self.stack.pop().ok_or(Error::new(
+            ErrorKind::RuntimeError,
+            "Stack underflow".to_string(),
+            Some(chunk.get_position(self.ip - 1)),
+        ))
     }
 
     fn get_instruction(&mut self, chunk: &Chunk) -> Instruction {
