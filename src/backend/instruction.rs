@@ -5,6 +5,7 @@ pub(crate) enum Instruction {
     Return,
     Print,
     DefGlobal,
+    SetGlobal,
     GetGlobal,
     Push(Value),
     Pop,

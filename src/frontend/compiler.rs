@@ -2,8 +2,9 @@ use crate::{
     backend::{chunk::Chunk, instruction::Instruction},
     common::{
         ast::{
-            BinaryExpression, Expression, ExpressionStatement, LiteralExpression, PrintStatement,
-            Program, Statement, UnaryExpression, VariableExpression, VariableStatement,
+            AssignmentExpression, BinaryExpression, Expression, ExpressionStatement,
+            LiteralExpression, PrintStatement, Program, Statement, UnaryExpression,
+            VariableExpression, VariableStatement,
         },
         error::{Error, ErrorKind},
         position::Position,
@@ -85,7 +86,7 @@ impl Compiler {
 
     fn compile_expression(&mut self, expression: &Expression) -> Result<(), Error> {
         match expression {
-            Expression::Assignment(_) => todo!(),
+            Expression::Assignment(expression) => self.compile_assignment_expression(expression),
             Expression::Binary(expression) => self.compile_binary_expression(expression),
             Expression::Unary(expression) => self.compile_unary_expression(expression),
             Expression::Group(expression) => self.compile_expression(&*expression.child),
@@ -93,6 +94,23 @@ impl Compiler {
             Expression::Literal(expression) => self.compile_literal_expression(expression),
             Expression::Variable(expression) => self.compile_variable_expression(expression),
         }
+    }
+
+    fn compile_assignment_expression(
+        &mut self,
+        expression: &AssignmentExpression,
+    ) -> Result<(), Error> {
+        self.compile_expression(&*expression.initializer)?;
+        self.chunk.add_instruction(
+            Instruction::Push(Value::String(expression.identifier.lexeme.clone())),
+            expression.identifier.position.clone(),
+        );
+        self.chunk.add_instruction(
+            Instruction::SetGlobal,
+            expression.identifier.position.clone(),
+        );
+
+        Ok(())
     }
 
     fn compile_binary_expression(&mut self, expression: &BinaryExpression) -> Result<(), Error> {

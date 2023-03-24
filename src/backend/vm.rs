@@ -55,6 +55,25 @@ impl VirtualMachine {
                     }
                 }
 
+                Instruction::SetGlobal => {
+                    let value = self.pop_stack(chunk)?;
+                    if let Value::String(name) = value {
+                        if let Some(_) = self.globals.get(&name) {
+                            let value = self.pop_stack(chunk)?;
+                            self.globals.insert(name, value.clone());
+                            self.stack.push(value);
+                        } else {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`{name}` is not defined"),
+                                Some(chunk.get_position(self.ip - 1)),
+                            ));
+                        }
+                    } else {
+                        unreachable!();
+                    }
+                }
+
                 Instruction::GetGlobal => {
                     if let Value::String(name) = self.pop_stack(chunk)? {
                         if let Some(value) = self.globals.get(&name) {
