@@ -4,7 +4,7 @@ use crate::common::types::Value;
 pub(crate) enum Instruction {
     Return,
     Print,
-
+    DefineGlobal,
     Push(Value),
     Pop,
 

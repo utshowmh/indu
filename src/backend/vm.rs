@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::common::{
     error::{Error, ErrorKind},
     types::Value,
@@ -8,6 +10,7 @@ use super::{chunk::Chunk, instruction::Instruction};
 pub(crate) struct VirtualMachine {
     ip: usize,
     stack: Vec<Value>,
+    globals: HashMap<String, Value>,
 }
 
 impl VirtualMachine {
@@ -15,6 +18,7 @@ impl VirtualMachine {
         Self {
             ip: 0,
             stack: Vec::new(),
+            globals: HashMap::new(),
         }
     }
 
@@ -38,6 +42,20 @@ impl VirtualMachine {
                 Instruction::Return => break,
 
                 Instruction::Print => println!("{}", self.pop_stack(chunk)?),
+
+                Instruction::DefineGlobal => {
+                    let value = self.pop_stack(chunk)?;
+                    if let Value::String(name) = value {
+                        let value = self.pop_stack(chunk)?;
+                        self.globals.insert(name, value);
+                    } else {
+                        return Err(Error::new(
+                            ErrorKind::RuntimeError,
+                            format!("`{value}` is not a valid assigment target"),
+                            Some(chunk.get_position(self.ip - 1)),
+                        ));
+                    }
+                }
 
                 Instruction::Push(value) => self.stack.push(value),
 

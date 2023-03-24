@@ -3,7 +3,7 @@ use crate::{
     common::{
         ast::{
             BinaryExpression, Expression, ExpressionStatement, LiteralExpression, PrintStatement,
-            Program, Statement, UnaryExpression,
+            Program, Statement, UnaryExpression, VariableStatement,
         },
         error::{Error, ErrorKind},
         position::Position,
@@ -34,10 +34,36 @@ impl Compiler {
 
     fn compile_statement(&mut self, statement: &Statement) -> Result<(), Error> {
         match statement {
+            Statement::Function(_) => todo!(),
+            Statement::If(_) => todo!(),
+            Statement::While(_) => todo!(),
+            Statement::Block(_) => todo!(),
+            Statement::Variable(statement) => self.compile_variable_statement(statement),
+            Statement::Return(_) => todo!(),
             Statement::Print(statement) => self.compile_print_statement(statement),
             Statement::Expression(statement) => self.compile_expression_statement(statement),
-            _ => todo!(),
         }
+    }
+
+    fn compile_variable_statement(&mut self, statement: &VariableStatement) -> Result<(), Error> {
+        if let Some(expression) = &statement.initializer {
+            self.compile_expression(expression)?;
+        } else {
+            self.chunk.add_instruction(
+                Instruction::Push(Value::Nil),
+                statement.identifier.position.clone(),
+            )
+        }
+        self.chunk.add_instruction(
+            Instruction::Push(Value::String(statement.identifier.lexeme.clone())),
+            statement.identifier.position.clone(),
+        );
+        self.chunk.add_instruction(
+            Instruction::DefineGlobal,
+            statement.identifier.position.clone(),
+        );
+
+        Ok(())
     }
 
     fn compile_print_statement(&mut self, statement: &PrintStatement) -> Result<(), Error> {

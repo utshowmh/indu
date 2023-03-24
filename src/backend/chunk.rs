@@ -35,11 +35,10 @@ impl Chunk {
         match instruction {
             Instruction::Return => self.debug_simple_instruction("ret", instruction_index),
             Instruction::Print => self.debug_simple_instruction("print", instruction_index),
-
+            Instruction::DefineGlobal => self.debug_simple_instruction("defg", instruction_index),
             Instruction::Push(value) => {
                 self.debug_constant_instruction("push", instruction_index, value);
             }
-
             Instruction::Pop => self.debug_simple_instruction("pop", instruction_index),
 
             Instruction::Negate => self.debug_simple_instruction("neg", instruction_index),
