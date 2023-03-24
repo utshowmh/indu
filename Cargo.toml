@@ -5,3 +5,6 @@ edition = "2021"
 authors = ["M H Utsho"]
 
 [dependencies]
+
+[features]
+debug_trace_execution = []

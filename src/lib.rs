@@ -16,7 +16,6 @@ use crate::frontend::{parser::Parser, scanner::Scanner};
 
 const COMMANDS: &str = "\
 #cmd        ->  prints available commands.
-#dbg        ->  runs a debugger for the vm.
 ";
 
 pub fn start() {
@@ -48,7 +47,7 @@ fn run_file(source_path: &str) -> Result<(), Error> {
         let chunk = compiler.compile(program)?;
 
         let mut vm = VirtualMachine::new();
-        vm.interpret(chunk, false)?;
+        vm.interpret(chunk)?;
 
         Ok(())
     } else {
@@ -62,8 +61,6 @@ fn run_file(source_path: &str) -> Result<(), Error> {
 
 fn run_repl() -> Result<(), Error> {
     println!("Welcome to Indu REPL. Type  `#cmd` to see available commands.\n");
-
-    let mut debug = false;
 
     loop {
         print!("=> ");
@@ -83,9 +80,6 @@ fn run_repl() -> Result<(), Error> {
         if line.starts_with('#') {
             match line {
                 "#cmd" => print!("{COMMANDS}"),
-                "#dbg" => {
-                    debug = true;
-                }
                 "#exit" => {
                     println!("Exiting Indu REPL.");
                     break;
@@ -114,7 +108,7 @@ fn run_repl() -> Result<(), Error> {
         let chunk = compiler.compile(program)?;
 
         let mut vm = VirtualMachine::new();
-        vm.interpret(chunk, debug).unwrap_or_else(|error| {
+        vm.interpret(chunk).unwrap_or_else(|error| {
             error.report();
         });
     }

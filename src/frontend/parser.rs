@@ -2,7 +2,7 @@ use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, ElseStatement,
         Expression, ExpressionStatement, FunctionStatement, GroupExpression, IfStatement,
-        LiteralExpression, Program, ReturnStatement, Statement, UnaryExpression,
+        LiteralExpression, PrintStatement, Program, ReturnStatement, Statement, UnaryExpression,
         VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
@@ -41,6 +41,7 @@ impl Parser {
             TokenKind::OpenBrace => Ok(Statement::Block(self.parse_block_statement()?)),
             TokenKind::Var => Ok(Statement::Variable(self.parse_var_statement()?)),
             TokenKind::Return => Ok(Statement::Return(self.parse_return_statement()?)),
+            TokenKind::Print => Ok(Statement::Print(self.parse_print_statement()?)),
             _ => Ok(Statement::Expression(self.parse_expression_statement()?)),
         }
     }
@@ -150,6 +151,12 @@ impl Parser {
         self.consume_token(TokenKind::Return)?;
         let expression = self.parse_expression()?;
         Ok(ReturnStatement::new(expression))
+    }
+
+    fn parse_print_statement(&mut self) -> Result<PrintStatement, Error> {
+        self.consume_token(TokenKind::Print)?;
+        let expression = self.parse_expression()?;
+        Ok(PrintStatement::new(expression))
     }
 
     fn parse_expression_statement(&mut self) -> Result<ExpressionStatement, Error> {

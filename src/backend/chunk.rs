@@ -29,13 +29,18 @@ impl Chunk {
         self.positions[position_index].clone()
     }
 
+    #[allow(unused)] // Enabled via `cfg` in vm
     pub(crate) fn debug_instruction(&self, instruction_index: usize) {
         let instruction = self.get_instruction(instruction_index);
         match instruction {
             Instruction::Return => self.debug_simple_instruction("ret", instruction_index),
-            Instruction::Constatnt(value) => {
-                self.debug_constant_instruction(instruction_index, value);
+            Instruction::Print => self.debug_simple_instruction("print", instruction_index),
+
+            Instruction::Push(value) => {
+                self.debug_constant_instruction("push", instruction_index, value);
             }
+
+            Instruction::Pop => self.debug_simple_instruction("pop", instruction_index),
 
             Instruction::Negate => self.debug_simple_instruction("neg", instruction_index),
             Instruction::Not => self.debug_simple_instruction("not", instruction_index),
@@ -64,10 +69,15 @@ impl Chunk {
         );
     }
 
-    fn debug_constant_instruction(&self, instruction_index: usize, value: Value) {
+    fn debug_constant_instruction(
+        &self,
+        instruction_name: &str,
+        instruction_index: usize,
+        value: Value,
+    ) {
         println!(
-            "{:04} {} const '{}'",
-            instruction_index, self.positions[instruction_index].line, value
+            "{:04} {} {} '{}'",
+            instruction_index, self.positions[instruction_index].line, instruction_name, value
         );
     }
 

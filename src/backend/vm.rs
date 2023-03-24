@@ -18,13 +18,14 @@ impl VirtualMachine {
         }
     }
 
-    pub(crate) fn interpret(&mut self, chunk: &Chunk, debug: bool) -> Result<(), Error> {
-        self.run(&chunk, debug)
+    pub(crate) fn interpret(&mut self, chunk: &Chunk) -> Result<(), Error> {
+        self.run(&chunk)
     }
 
-    fn run(&mut self, chunk: &Chunk, debug: bool) -> Result<(), Error> {
+    fn run(&mut self, chunk: &Chunk) -> Result<(), Error> {
         while chunk.ip_is_valid(self.ip) {
-            if debug {
+            #[cfg(feature = "debug_trace_execution")]
+            {
                 print!("statck [");
                 for value in &self.stack {
                     print!(" {value},");
@@ -34,13 +35,15 @@ impl VirtualMachine {
             }
 
             match self.get_instruction(chunk) {
-                Instruction::Return => {
-                    let value = self.pop_stack(chunk)?;
-                    println!("{value}");
-                    break;
-                }
+                Instruction::Return => break,
 
-                Instruction::Constatnt(value) => self.stack.push(value),
+                Instruction::Print => println!("{}", self.pop_stack(chunk)?),
+
+                Instruction::Push(value) => self.stack.push(value),
+
+                Instruction::Pop => {
+                    self.pop_stack(chunk)?;
+                }
 
                 Instruction::Negate => {
                     let value = self.pop_stack(chunk)?;

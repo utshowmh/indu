@@ -10,6 +10,7 @@ pub(crate) enum Statement {
     Block(BlockStatement),
     Variable(VariableStatement),
     Return(ReturnStatement),
+    Print(PrintStatement),
     Expression(ExpressionStatement),
 }
 
@@ -104,6 +105,17 @@ pub(crate) struct ReturnStatement {
 }
 
 impl ReturnStatement {
+    pub(crate) fn new(expression: Expression) -> Self {
+        Self { expression }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct PrintStatement {
+    pub(crate) expression: Expression,
+}
+
+impl PrintStatement {
     pub(crate) fn new(expression: Expression) -> Self {
         Self { expression }
     }

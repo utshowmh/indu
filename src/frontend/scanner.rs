@@ -318,6 +318,7 @@ impl Scanner {
         self.keywords.insert("for".to_string(), TokenKind::For);
         self.keywords.insert("if".to_string(), TokenKind::If);
         self.keywords.insert("nil".to_string(), TokenKind::Nil);
+        self.keywords.insert("print".to_string(), TokenKind::Print);
         self.keywords
             .insert("return".to_string(), TokenKind::Return);
         self.keywords.insert("super".to_string(), TokenKind::Super);

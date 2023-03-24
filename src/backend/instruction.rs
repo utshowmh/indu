@@ -3,8 +3,10 @@ use crate::common::types::Value;
 #[derive(Clone)]
 pub(crate) enum Instruction {
     Return,
+    Print,
 
-    Constatnt(Value),
+    Push(Value),
+    Pop,
 
     Negate,
     Not,
