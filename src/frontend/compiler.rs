@@ -3,7 +3,7 @@ use crate::{
     common::{
         ast::{
             BinaryExpression, Expression, ExpressionStatement, LiteralExpression, PrintStatement,
-            Program, Statement, UnaryExpression, VariableStatement,
+            Program, Statement, UnaryExpression, VariableExpression, VariableStatement,
         },
         error::{Error, ErrorKind},
         position::Position,
@@ -59,7 +59,7 @@ impl Compiler {
             statement.identifier.position.clone(),
         );
         self.chunk.add_instruction(
-            Instruction::DefineGlobal,
+            Instruction::DefGlobal,
             statement.identifier.position.clone(),
         );
 
@@ -85,11 +85,13 @@ impl Compiler {
 
     fn compile_expression(&mut self, expression: &Expression) -> Result<(), Error> {
         match expression {
+            Expression::Assignment(_) => todo!(),
             Expression::Binary(expression) => self.compile_binary_expression(expression),
             Expression::Unary(expression) => self.compile_unary_expression(expression),
             Expression::Group(expression) => self.compile_expression(&*expression.child),
+            Expression::Call(_) => todo!(),
             Expression::Literal(expression) => self.compile_literal_expression(expression),
-            _ => todo!(),
+            Expression::Variable(expression) => self.compile_variable_expression(expression),
         }
     }
 
@@ -192,6 +194,20 @@ impl Compiler {
                 expression.position(),
             );
         }
+
+        Ok(())
+    }
+
+    fn compile_variable_expression(
+        &mut self,
+        expression: &VariableExpression,
+    ) -> Result<(), Error> {
+        self.chunk.add_instruction(
+            Instruction::Push(Value::String(expression.identifier.lexeme.clone())),
+            expression.position(),
+        );
+        self.chunk
+            .add_instruction(Instruction::GetGlobal, expression.position());
 
         Ok(())
     }

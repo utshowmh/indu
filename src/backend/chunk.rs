@@ -35,7 +35,8 @@ impl Chunk {
         match instruction {
             Instruction::Return => self.debug_simple_instruction("ret", instruction_index),
             Instruction::Print => self.debug_simple_instruction("print", instruction_index),
-            Instruction::DefineGlobal => self.debug_simple_instruction("defg", instruction_index),
+            Instruction::DefGlobal => self.debug_simple_instruction("defg", instruction_index),
+            Instruction::GetGlobal => self.debug_simple_instruction("getg", instruction_index),
             Instruction::Push(value) => {
                 self.debug_constant_instruction("push", instruction_index, value);
             }

@@ -23,6 +23,8 @@ impl VirtualMachine {
     }
 
     pub(crate) fn interpret(&mut self, chunk: &Chunk) -> Result<(), Error> {
+        self.ip = 0;
+        self.stack = Vec::new();
         self.run(&chunk)
     }
 
@@ -43,17 +45,29 @@ impl VirtualMachine {
 
                 Instruction::Print => println!("{}", self.pop_stack(chunk)?),
 
-                Instruction::DefineGlobal => {
+                Instruction::DefGlobal => {
                     let value = self.pop_stack(chunk)?;
                     if let Value::String(name) = value {
                         let value = self.pop_stack(chunk)?;
                         self.globals.insert(name, value);
                     } else {
-                        return Err(Error::new(
-                            ErrorKind::RuntimeError,
-                            format!("`{value}` is not a valid assigment target"),
-                            Some(chunk.get_position(self.ip - 1)),
-                        ));
+                        unreachable!();
+                    }
+                }
+
+                Instruction::GetGlobal => {
+                    if let Value::String(name) = self.pop_stack(chunk)? {
+                        if let Some(value) = self.globals.get(&name) {
+                            self.stack.push(value.clone());
+                        } else {
+                            return Err(Error::new(
+                                ErrorKind::RuntimeError,
+                                format!("`{name}` is not defined"),
+                                Some(chunk.get_position(self.ip - 1)),
+                            ));
+                        }
+                    } else {
+                        unreachable!();
                     }
                 }
 
