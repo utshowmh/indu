@@ -1,21 +1,26 @@
-mod backend;
 mod common;
 mod frontend;
+mod runtime;
 
 use std::{
+    borrow::Borrow,
+    cell::RefCell,
     env::args,
     fs::read_to_string,
     io::{stdin, stdout, Write},
 };
 
-use backend::vm::VirtualMachine;
 use common::error::{Error, ErrorKind};
-use frontend::compiler::Compiler;
+use runtime::environment::Environment;
 
-use crate::frontend::{parser::Parser, scanner::Scanner};
+use crate::{
+    frontend::{parser::Parser, scanner::Scanner},
+    runtime::interpreter::Interpreter,
+};
 
 const COMMANDS: &str = "\
 #cmd        ->  prints available commands.
+#env        ->  shows environment (variable bindings).
 ";
 
 pub fn start() {
@@ -41,15 +46,10 @@ fn run_file(source_path: &str) -> Result<(), Error> {
         let tokens = scanner.scan()?;
 
         let mut parser = Parser::new(tokens);
-        let program = parser.parse()?;
+        let expression = parser.parse()?;
 
-        let mut compiler = Compiler::new();
-        let chunk = compiler.compile(program)?;
-
-        let mut vm = VirtualMachine::new();
-        vm.interpret(chunk)?;
-
-        Ok(())
+        let mut interpreter = Interpreter::new();
+        interpreter.interpret(expression)
     } else {
         Err(Error::new(
             ErrorKind::SystemError,
@@ -62,24 +62,25 @@ fn run_file(source_path: &str) -> Result<(), Error> {
 fn run_repl() -> Result<(), Error> {
     println!("Welcome to Indu REPL. Type  `#cmd` to see available commands.\n");
 
-    let mut line = String::new();
-    let mut vm = VirtualMachine::new();
+    let mut environment = RefCell::new(Environment::new());
 
     loop {
-        print!("> ");
+        print!(">>> ");
         stdout().flush().or(Err(Error::new(
             ErrorKind::SystemError,
             "Could not flush stdout".to_string(),
             None,
         )))?;
+        let mut line = String::new();
         stdin().read_line(&mut line).or(Err(Error::new(
             ErrorKind::SystemError,
             "Could not read from stdin".to_string(),
             None,
         )))?;
+        let line = line.trim();
 
         if line.starts_with('#') {
-            match line.trim() {
+            match line {
                 "#cmd" => print!("{COMMANDS}"),
                 "#exit" => {
                     println!("Exiting Indu REPL.");
@@ -93,26 +94,25 @@ fn run_repl() -> Result<(), Error> {
             continue;
         }
 
-        let mut scanner = Scanner::new(line.trim());
+        let mut scanner = Scanner::new(line);
         let tokens = scanner.scan().unwrap_or_else(|error| {
             error.report();
             Vec::new()
         });
 
         let mut parser = Parser::new(tokens);
-        let program = parser.parse().unwrap_or_else(|error| {
+        let expression = parser.parse().unwrap_or_else(|error| {
             error.report();
             Vec::new()
         });
 
-        let mut compiler = Compiler::new();
-        let chunk = compiler.compile(program)?;
-
-        vm.interpret(chunk).unwrap_or_else(|error| {
+        let mut interpreter = Interpreter::new();
+        interpreter.environments.push(environment);
+        interpreter.interpret(expression).unwrap_or_else(|error| {
             error.report();
         });
 
-        line.clear();
+        environment = interpreter.environments.last().borrow().unwrap().clone();
     }
 
     Ok(())

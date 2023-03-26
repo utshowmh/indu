@@ -6,7 +6,6 @@ pub(crate) enum ErrorKind {
     LexerError,
     ParserError,
     RuntimeError,
-    CompilerError,
 }
 
 #[derive(Debug)]

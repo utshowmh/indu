@@ -3,4 +3,4 @@ fun factorial(n) {
     return n * factorial(n - 1)
 }
 
-writeln(factorial(20))
+writeln(factorial(5))

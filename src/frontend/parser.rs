@@ -2,8 +2,8 @@ use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, ElseStatement,
         Expression, ExpressionStatement, FunctionStatement, GroupExpression, IfStatement,
-        LiteralExpression, PrintStatement, Program, ReturnStatement, Statement, UnaryExpression,
-        VariableExpression, VariableStatement, WhileStatement,
+        LiteralExpression, ReturnStatement, Statement, UnaryExpression, VariableExpression,
+        VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -22,7 +22,7 @@ impl Parser {
         }
     }
 
-    pub(crate) fn parse(&mut self) -> Result<Program, Error> {
+    pub(crate) fn parse(&mut self) -> Result<Vec<Statement>, Error> {
         let mut statements = Vec::new();
 
         while self.index_in_bound() && !self.current_token_is_eof() {
@@ -41,7 +41,6 @@ impl Parser {
             TokenKind::OpenBrace => Ok(Statement::Block(self.parse_block_statement()?)),
             TokenKind::Var => Ok(Statement::Variable(self.parse_var_statement()?)),
             TokenKind::Return => Ok(Statement::Return(self.parse_return_statement()?)),
-            TokenKind::Print => Ok(Statement::Print(self.parse_print_statement()?)),
             _ => Ok(Statement::Expression(self.parse_expression_statement()?)),
         }
     }
@@ -151,12 +150,6 @@ impl Parser {
         self.consume_token(TokenKind::Return)?;
         let expression = self.parse_expression()?;
         Ok(ReturnStatement::new(expression))
-    }
-
-    fn parse_print_statement(&mut self) -> Result<PrintStatement, Error> {
-        self.consume_token(TokenKind::Print)?;
-        let expression = self.parse_expression()?;
-        Ok(PrintStatement::new(expression))
     }
 
     fn parse_expression_statement(&mut self) -> Result<ExpressionStatement, Error> {

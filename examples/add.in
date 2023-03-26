@@ -5,4 +5,3 @@ fun add(a, b) {
 }
 
 writeln(add(5, 5))
-
