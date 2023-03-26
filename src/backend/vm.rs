@@ -2,15 +2,15 @@ use std::collections::HashMap;
 
 use crate::common::{
     error::{Error, ErrorKind},
-    types::Value,
+    object::Object,
 };
 
 use super::{chunk::Chunk, instruction::Instruction};
 
 pub(crate) struct VirtualMachine {
     ip: usize,
-    stack: Vec<Value>,
-    globals: HashMap<String, Value>,
+    stack: Vec<Object>,
+    globals: HashMap<String, Object>,
 }
 
 impl VirtualMachine {
@@ -33,8 +33,8 @@ impl VirtualMachine {
             #[cfg(feature = "debug_trace_execution")]
             {
                 print!("statck [");
-                for value in &self.stack {
-                    print!(" {value},");
+                for object in &self.stack {
+                    print!(" {object},");
                 }
                 println!(" ]");
                 chunk.debug_instruction(self.ip);
@@ -46,22 +46,22 @@ impl VirtualMachine {
                 Instruction::Print => println!("{}", self.pop_stack(chunk)?),
 
                 Instruction::DefGlobal => {
-                    let value = self.pop_stack(chunk)?;
-                    if let Value::String(name) = value {
-                        let value = self.pop_stack(chunk)?;
-                        self.globals.insert(name, value);
+                    let object = self.pop_stack(chunk)?;
+                    if let Object::String(name) = object {
+                        let object = self.pop_stack(chunk)?;
+                        self.globals.insert(name, object);
                     } else {
                         unreachable!();
                     }
                 }
 
                 Instruction::SetGlobal => {
-                    let value = self.pop_stack(chunk)?;
-                    if let Value::String(name) = value {
+                    let object = self.pop_stack(chunk)?;
+                    if let Object::String(name) = object {
                         if let Some(_) = self.globals.get(&name) {
-                            let value = self.pop_stack(chunk)?;
-                            self.globals.insert(name, value.clone());
-                            self.stack.push(value);
+                            let object = self.pop_stack(chunk)?;
+                            self.globals.insert(name, object.clone());
+                            self.stack.push(object);
                         } else {
                             return Err(Error::new(
                                 ErrorKind::RuntimeError,
@@ -75,9 +75,9 @@ impl VirtualMachine {
                 }
 
                 Instruction::GetGlobal => {
-                    if let Value::String(name) = self.pop_stack(chunk)? {
-                        if let Some(value) = self.globals.get(&name) {
-                            self.stack.push(value.clone());
+                    if let Object::String(name) = self.pop_stack(chunk)? {
+                        if let Some(object) = self.globals.get(&name) {
+                            self.stack.push(object.clone());
                         } else {
                             return Err(Error::new(
                                 ErrorKind::RuntimeError,
@@ -90,33 +90,33 @@ impl VirtualMachine {
                     }
                 }
 
-                Instruction::Push(value) => self.stack.push(value),
+                Instruction::Push(object) => self.stack.push(object),
 
                 Instruction::Pop => {
                     self.pop_stack(chunk)?;
                 }
 
                 Instruction::Negate => {
-                    let value = self.pop_stack(chunk)?;
-                    if let Value::Number(num) = value {
-                        self.stack.push(Value::Number(-num));
+                    let object = self.pop_stack(chunk)?;
+                    if let Object::Number(num) = object {
+                        self.stack.push(Object::Number(-num));
                     } else {
                         return Err(Error::new(
                             ErrorKind::RuntimeError,
-                            format!("`-` is not defined for `{value}`"),
+                            format!("`-` is not defined for `{object}`"),
                             Some(chunk.get_position(self.ip - 1)),
                         ));
                     }
                 }
 
                 Instruction::Not => {
-                    let value = self.pop_stack(chunk)?;
-                    if let Value::Boolean(bool) = value {
-                        self.stack.push(Value::Boolean(!bool));
+                    let object = self.pop_stack(chunk)?;
+                    if let Object::Boolean(bool) = object {
+                        self.stack.push(Object::Boolean(!bool));
                     } else {
                         return Err(Error::new(
                             ErrorKind::RuntimeError,
-                            format!("`!` is not defined for `{value}`"),
+                            format!("`!` is not defined for `{object}`"),
                             Some(chunk.get_position(self.ip - 1)),
                         ));
                     }
@@ -126,11 +126,11 @@ impl VirtualMachine {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
-                        (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Number(a + b))
+                        (Object::Number(a), Object::Number(b)) => {
+                            self.stack.push(Object::Number(a + b))
                         }
-                        (Value::String(a), Value::String(b)) => {
-                            self.stack.push(Value::String(format!("{a}{b}")))
+                        (Object::String(a), Object::String(b)) => {
+                            self.stack.push(Object::String(format!("{a}{b}")))
                         }
                         _ => {
                             return Err(Error::new(
@@ -146,8 +146,8 @@ impl VirtualMachine {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
-                        (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Number(a - b))
+                        (Object::Number(a), Object::Number(b)) => {
+                            self.stack.push(Object::Number(a - b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -163,8 +163,8 @@ impl VirtualMachine {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
-                        (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Number(a * b))
+                        (Object::Number(a), Object::Number(b)) => {
+                            self.stack.push(Object::Number(a * b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -180,7 +180,7 @@ impl VirtualMachine {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
-                        (Value::Number(a), Value::Number(b)) => {
+                        (Object::Number(a), Object::Number(b)) => {
                             if b == &0. {
                                 return Err(Error::new(
                                     ErrorKind::RuntimeError,
@@ -188,7 +188,7 @@ impl VirtualMachine {
                                     Some(chunk.get_position(self.ip - 1)),
                                 ));
                             }
-                            self.stack.push(Value::Number(a / b))
+                            self.stack.push(Object::Number(a / b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -203,21 +203,21 @@ impl VirtualMachine {
                 Instruction::Equal => {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
-                    self.stack.push(Value::Boolean(a == b));
+                    self.stack.push(Object::Boolean(a == b));
                 }
 
                 Instruction::NotEqual => {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
-                    self.stack.push(Value::Boolean(a != b));
+                    self.stack.push(Object::Boolean(a != b));
                 }
 
                 Instruction::Greater => {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
-                        (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Boolean(a > b))
+                        (Object::Number(a), Object::Number(b)) => {
+                            self.stack.push(Object::Boolean(a > b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -233,8 +233,8 @@ impl VirtualMachine {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
-                        (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Boolean(a >= b))
+                        (Object::Number(a), Object::Number(b)) => {
+                            self.stack.push(Object::Boolean(a >= b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -250,8 +250,8 @@ impl VirtualMachine {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
-                        (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Boolean(a < b));
+                        (Object::Number(a), Object::Number(b)) => {
+                            self.stack.push(Object::Boolean(a < b));
                         }
                         _ => {
                             return Err(Error::new(
@@ -267,8 +267,8 @@ impl VirtualMachine {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     match (&a, &b) {
-                        (Value::Number(a), Value::Number(b)) => {
-                            self.stack.push(Value::Boolean(a <= b))
+                        (Object::Number(a), Object::Number(b)) => {
+                            self.stack.push(Object::Boolean(a <= b))
                         }
                         _ => {
                             return Err(Error::new(
@@ -284,14 +284,14 @@ impl VirtualMachine {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     self.stack
-                        .push(Value::Boolean(a.is_truthy() && b.is_truthy()))
+                        .push(Object::Boolean(a.is_truthy() && b.is_truthy()))
                 }
 
                 Instruction::Or => {
                     let b = self.pop_stack(chunk)?;
                     let a = self.pop_stack(chunk)?;
                     self.stack
-                        .push(Value::Boolean(a.is_truthy() || b.is_truthy()))
+                        .push(Object::Boolean(a.is_truthy() || b.is_truthy()))
                 }
             }
         }
@@ -299,7 +299,7 @@ impl VirtualMachine {
         Ok(())
     }
 
-    fn pop_stack(&mut self, chunk: &Chunk) -> Result<Value, Error> {
+    fn pop_stack(&mut self, chunk: &Chunk) -> Result<Object, Error> {
         self.stack.pop().ok_or(Error::new(
             ErrorKind::RuntimeError,
             "Stack underflow".to_string(),

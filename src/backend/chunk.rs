@@ -1,4 +1,4 @@
-use crate::common::{position::Position, types::Value};
+use crate::common::{object::Object, position::Position};
 
 use super::instruction::Instruction;
 
@@ -38,8 +38,8 @@ impl Chunk {
             Instruction::DefGlobal => self.debug_simple_instruction("defg", instruction_index),
             Instruction::SetGlobal => self.debug_simple_instruction("setg", instruction_index),
             Instruction::GetGlobal => self.debug_simple_instruction("getg", instruction_index),
-            Instruction::Push(value) => {
-                self.debug_constant_instruction("push", instruction_index, value);
+            Instruction::Push(object) => {
+                self.debug_constant_instruction("push", instruction_index, object);
             }
             Instruction::Pop => self.debug_simple_instruction("pop", instruction_index),
 
@@ -74,11 +74,11 @@ impl Chunk {
         &self,
         instruction_name: &str,
         instruction_index: usize,
-        value: Value,
+        object: Object,
     ) {
         println!(
             "{:04} {} {} '{}'",
-            instruction_index, self.positions[instruction_index].line, instruction_name, value
+            instruction_index, self.positions[instruction_index].line, instruction_name, object
         );
     }
 

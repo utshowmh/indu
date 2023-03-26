@@ -1,4 +1,4 @@
-use crate::common::types::Value;
+use crate::common::object::Object;
 
 #[derive(Clone)]
 pub(crate) enum Instruction {
@@ -7,7 +7,7 @@ pub(crate) enum Instruction {
     DefGlobal,
     SetGlobal,
     GetGlobal,
-    Push(Value),
+    Push(Object),
     Pop,
 
     Negate,

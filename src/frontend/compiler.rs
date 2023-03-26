@@ -7,9 +7,9 @@ use crate::{
             VariableExpression, VariableStatement,
         },
         error::{Error, ErrorKind},
+        object::Object,
         position::Position,
         token::TokenKind,
-        types::Value,
     },
 };
 
@@ -51,12 +51,12 @@ impl Compiler {
             self.compile_expression(expression)?;
         } else {
             self.chunk.add_instruction(
-                Instruction::Push(Value::Nil),
+                Instruction::Push(Object::Nil),
                 statement.identifier.position.clone(),
             )
         }
         self.chunk.add_instruction(
-            Instruction::Push(Value::String(statement.identifier.lexeme.clone())),
+            Instruction::Push(Object::String(statement.identifier.lexeme.clone())),
             statement.identifier.position.clone(),
         );
         self.chunk.add_instruction(
@@ -102,7 +102,7 @@ impl Compiler {
     ) -> Result<(), Error> {
         self.compile_expression(&*expression.initializer)?;
         self.chunk.add_instruction(
-            Instruction::Push(Value::String(expression.identifier.lexeme.clone())),
+            Instruction::Push(Object::String(expression.identifier.lexeme.clone())),
             expression.identifier.position.clone(),
         );
         self.chunk.add_instruction(
@@ -193,22 +193,22 @@ impl Compiler {
     fn compile_literal_expression(&mut self, expression: &LiteralExpression) -> Result<(), Error> {
         if expression.value.kind == TokenKind::Nil {
             self.chunk
-                .add_instruction(Instruction::Push(Value::Nil), expression.position())
+                .add_instruction(Instruction::Push(Object::Nil), expression.position())
         } else if expression.value.kind == TokenKind::Number {
             self.chunk.add_instruction(
-                Instruction::Push(Value::Number(expression.value.lexeme.parse().unwrap())), // We're making sure it's a number (f64) in scanner.
+                Instruction::Push(Object::Number(expression.value.lexeme.parse().unwrap())), // We're making sure it's a number (f64) in scanner.
                 expression.position(),
             );
         } else if expression.value.kind == TokenKind::True
             || expression.value.kind == TokenKind::False
         {
             self.chunk.add_instruction(
-                Instruction::Push(Value::Boolean(expression.value.lexeme.parse().unwrap())), // We're making sure it's a true/false in scanner.
+                Instruction::Push(Object::Boolean(expression.value.lexeme.parse().unwrap())), // We're making sure it's a true/false in scanner.
                 expression.position(),
             );
         } else {
             self.chunk.add_instruction(
-                Instruction::Push(Value::String(expression.value.lexeme.clone())),
+                Instruction::Push(Object::String(expression.value.lexeme.clone())),
                 expression.position(),
             );
         }
@@ -221,7 +221,7 @@ impl Compiler {
         expression: &VariableExpression,
     ) -> Result<(), Error> {
         self.chunk.add_instruction(
-            Instruction::Push(Value::String(expression.identifier.lexeme.clone())),
+            Instruction::Push(Object::String(expression.identifier.lexeme.clone())),
             expression.position(),
         );
         self.chunk
