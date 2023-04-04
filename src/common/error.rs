@@ -39,13 +39,43 @@ impl Error {
         }
     }
 
+    pub(crate) fn report_in_source(&self, source: &str) {
+        if let Some(position) = self.position.clone() {
+            let lines = source.split("\n").collect::<Vec<_>>();
+            let line = lines[position.line];
+
+            eprintln!("Error in line {}:", position.line + 1);
+            eprint!("{} | ", position.line + 1);
+            eprintln!("{line}");
+
+            eprint!("    ");
+            if position.line == 0 {
+                for _ in 0..position.start {
+                    eprint!(" ");
+                }
+            } else {
+                for _ in lines[position.line - 1].len()..position.start {
+                    // FIXME: I am a bug!
+                    eprint!(" ");
+                }
+            }
+            for _ in position.start..position.end {
+                eprint!("^");
+            }
+            eprintln!(" here");
+        }
+        eprintln!("{}: {}", self.kind, self.message);
+    }
+
     pub(crate) fn report(&self) {
         if let Some(position) = self.position.clone() {
             eprintln!(
                 "[line {}, column {}:{}]",
-                position.line, position.start, position.end
+                position.line + 1,
+                position.start,
+                position.end
             );
         }
-        eprintln!("{}: {}.", self.kind, self.message,);
+        eprintln!("{}: {}", self.kind, self.message);
     }
 }

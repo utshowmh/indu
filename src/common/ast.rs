@@ -166,7 +166,7 @@ pub(crate) struct AssignmentExpression {
 impl AssignmentExpression {
     pub(crate) fn new(identifier: Token, initializer: Expression) -> Self {
         Self {
-            identifier: identifier.clone(),
+            identifier,
             initializer: Box::new(initializer),
         }
     }
@@ -259,9 +259,7 @@ pub(crate) struct LiteralExpression {
 
 impl LiteralExpression {
     pub(crate) fn new(value: Token) -> Self {
-        Self {
-            value: value.clone(),
-        }
+        Self { value }
     }
 
     pub(crate) fn position(&self) -> Position {

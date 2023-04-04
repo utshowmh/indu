@@ -268,9 +268,9 @@ impl Parser {
     }
 
     fn parse_unary_expression(&mut self) -> Result<Expression, Error> {
-        if self.current_token_matches(&[TokenKind::Minus, TokenKind::Not]) {
+        if self.current_token_matches(&[TokenKind::Plus, TokenKind::Minus, TokenKind::Not]) {
             let operator = self.next_token();
-            let right = self.parse_call_expression()?;
+            let right = self.parse_unary_expression()?;
             Ok(Expression::Unary(UnaryExpression::new(operator, right)))
         } else {
             self.parse_call_expression()
@@ -324,7 +324,7 @@ impl Parser {
             Ok(Expression::Group(GroupExpression::new(child)))
         } else {
             Err(self.generate_error(format!(
-                "Unexpected token `{}`",
+                "Unexpected token. Expected 'literal', found '{}'.",
                 self.current_token().lexeme
             )))
         }
@@ -335,7 +335,7 @@ impl Parser {
     }
 
     fn current_token_is_eof(&self) -> bool {
-        self.current_token().kind == TokenKind::EOF
+        self.current_token().kind == TokenKind::Eof
     }
 
     fn current_token(&self) -> Token {

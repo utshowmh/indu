@@ -23,7 +23,7 @@ impl Scanner {
 
             start_index: 0,
             current_index: 0,
-            current_line: 1,
+            current_line: 0,
 
             keywords: HashMap::new(),
         }
@@ -42,7 +42,7 @@ impl Scanner {
         }
 
         tokens.push(Token::new(
-            TokenKind::EOF,
+            TokenKind::Eof,
             String::from("\0"),
             self.generate_position(),
         ));

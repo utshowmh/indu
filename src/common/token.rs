@@ -46,7 +46,7 @@ pub(crate) enum TokenKind {
     Var,
     While,
 
-    EOF,
+    Eof,
 }
 
 impl Display for TokenKind {
@@ -91,7 +91,7 @@ impl Display for TokenKind {
             Self::True => write!(f, "true"),
             Self::Var => write!(f, "var"),
             Self::While => write!(f, "while"),
-            Self::EOF => write!(f, "\0"),
+            Self::Eof => write!(f, "\0"),
         }
     }
 }

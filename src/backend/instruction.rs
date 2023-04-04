@@ -8,6 +8,7 @@ pub(crate) enum Instruction {
     Push(Object),
     Pop,
 
+    Identify,
     Negate,
     Not,
 

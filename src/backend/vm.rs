@@ -39,16 +39,29 @@ impl VirtualMachine {
             match self.get_instruction(chunk) {
                 Instruction::Return => break,
 
-                Instruction::Print => println!("{}", self.pop_stack(chunk)?),
+                Instruction::Print => println!("{}", self.stack.pop().unwrap()),
 
                 Instruction::Push(object) => self.stack.push(object),
 
                 Instruction::Pop => {
-                    self.pop_stack(chunk)?;
+                    self.stack.pop().unwrap();
+                }
+
+                Instruction::Identify => {
+                    let object = self.stack.pop().unwrap();
+                    if let Object::Number(num) = object {
+                        self.stack.push(Object::Number(num));
+                    } else {
+                        return Err(Error::new(
+                            ErrorKind::Runtime,
+                            format!("Invalid operator. Unary operator '-' is not defined for '{object}'."),
+                            Some(chunk.get_position(self.ip - 1)),
+                        ));
+                    }
                 }
 
                 Instruction::Negate => {
-                    let object = self.pop_stack(chunk)?;
+                    let object = self.stack.pop().unwrap();
                     if let Object::Number(num) = object {
                         self.stack.push(Object::Number(-num));
                     } else {
@@ -61,7 +74,7 @@ impl VirtualMachine {
                 }
 
                 Instruction::Not => {
-                    let object = self.pop_stack(chunk)?;
+                    let object = self.stack.pop().unwrap();
                     if let Object::Boolean(bool) = object {
                         self.stack.push(Object::Boolean(!bool));
                     } else {
@@ -74,8 +87,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::Add => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     match (&a, &b) {
                         (Object::Number(a), Object::Number(b)) => {
                             self.stack.push(Object::Number(a + b))
@@ -94,8 +107,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::Subtract => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     match (&a, &b) {
                         (Object::Number(a), Object::Number(b)) => {
                             self.stack.push(Object::Number(a - b))
@@ -111,8 +124,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::Multiply => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     match (&a, &b) {
                         (Object::Number(a), Object::Number(b)) => {
                             self.stack.push(Object::Number(a * b))
@@ -128,8 +141,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::Divide => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     match (&a, &b) {
                         (Object::Number(a), Object::Number(b)) => {
                             if b == &0. {
@@ -152,20 +165,20 @@ impl VirtualMachine {
                 }
 
                 Instruction::Equal => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     self.stack.push(Object::Boolean(a == b));
                 }
 
                 Instruction::NotEqual => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     self.stack.push(Object::Boolean(a != b));
                 }
 
                 Instruction::Greater => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     match (&a, &b) {
                         (Object::Number(a), Object::Number(b)) => {
                             self.stack.push(Object::Boolean(a > b))
@@ -181,8 +194,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::GreaterEqual => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     match (&a, &b) {
                         (Object::Number(a), Object::Number(b)) => {
                             self.stack.push(Object::Boolean(a >= b))
@@ -198,8 +211,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::Lesser => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     match (&a, &b) {
                         (Object::Number(a), Object::Number(b)) => {
                             self.stack.push(Object::Boolean(a < b));
@@ -215,8 +228,8 @@ impl VirtualMachine {
                 }
 
                 Instruction::LesserEqual => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     match (&a, &b) {
                         (Object::Number(a), Object::Number(b)) => {
                             self.stack.push(Object::Boolean(a <= b))
@@ -232,15 +245,15 @@ impl VirtualMachine {
                 }
 
                 Instruction::And => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     self.stack
                         .push(Object::Boolean(a.is_truthy() && b.is_truthy()))
                 }
 
                 Instruction::Or => {
-                    let b = self.pop_stack(chunk)?;
-                    let a = self.pop_stack(chunk)?;
+                    let b = self.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
                     self.stack
                         .push(Object::Boolean(a.is_truthy() || b.is_truthy()))
                 }
@@ -248,14 +261,6 @@ impl VirtualMachine {
         }
 
         Ok(())
-    }
-
-    fn pop_stack(&mut self, chunk: &Chunk) -> Result<Object, Error> {
-        self.stack.pop().ok_or(Error::new(
-            ErrorKind::Runtime,
-            format!("Stack underflow. Tried to access from an empty stack."),
-            Some(chunk.get_position(self.ip - 1)),
-        ))
     }
 
     fn get_instruction(&mut self, chunk: &Chunk) -> Instruction {

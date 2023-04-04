@@ -47,18 +47,7 @@ fn run() -> Result<(), Error> {
 
 fn run_file(source_path: &str) -> Result<(), Error> {
     if let Ok(source) = read_to_string(source_path) {
-        let mut scanner = Scanner::new(&source);
-        let tokens = scanner.scan()?;
-
-        let mut parser = Parser::new(tokens);
-        let program = parser.parse()?;
-
-        let mut compiler = Compiler::new();
-        let chunk = compiler.compile(program)?;
-
-        let mut vm = VirtualMachine::new();
-        vm.interpret(chunk)?;
-
+        run_source(&source).unwrap_or_else(|error| error.report_in_source(&source));
         Ok(())
     } else {
         Err(Error::new(
@@ -67,6 +56,22 @@ fn run_file(source_path: &str) -> Result<(), Error> {
             None,
         ))
     }
+}
+
+fn run_source(source: &str) -> Result<(), Error> {
+    let mut scanner = Scanner::new(&source);
+    let tokens = scanner.scan()?;
+
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse()?;
+
+    let mut compiler = Compiler::new();
+    let chunk = compiler.compile(program)?;
+
+    let mut vm = VirtualMachine::new();
+    vm.interpret(chunk)?;
+
+    Ok(())
 }
 
 fn run_repl() -> Result<(), Error> {
@@ -107,25 +112,25 @@ fn run_repl() -> Result<(), Error> {
 
         let mut scanner = Scanner::new(line.trim());
         let tokens = scanner.scan().unwrap_or_else(|error| {
-            error.report();
+            error.report_in_source(&line);
             Vec::new()
         });
 
         let mut parser = Parser::new(tokens);
         let program = parser.parse().unwrap_or_else(|error| {
-            error.report();
+            error.report_in_source(&line);
             Program::new()
         });
 
         let mut compiler = Compiler::new();
         let chunk = compiler.compile(program).unwrap_or_else(|error| {
-            error.report();
+            error.report_in_source(&line);
             Chunk::new()
         });
 
         let mut vm = VirtualMachine::new();
         vm.interpret(chunk).unwrap_or_else(|error| {
-            error.report();
+            error.report_in_source(&line);
         });
 
         line.clear();

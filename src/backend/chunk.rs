@@ -33,7 +33,7 @@ impl Chunk {
     pub(crate) fn debug_instruction(&self, instruction_index: usize) {
         let instruction = self.get_instruction(instruction_index);
         match instruction {
-            Instruction::Return => self.debug_simple_instruction("ret", instruction_index),
+            Instruction::Return => self.debug_simple_instruction("return", instruction_index),
             Instruction::Print => self.debug_simple_instruction("print", instruction_index),
 
             Instruction::Push(object) => {
@@ -41,20 +41,25 @@ impl Chunk {
             }
             Instruction::Pop => self.debug_simple_instruction("pop", instruction_index),
 
-            Instruction::Negate => self.debug_simple_instruction("neg", instruction_index),
+            Instruction::Identify => self.debug_simple_instruction("identify", instruction_index),
+            Instruction::Negate => self.debug_simple_instruction("negate", instruction_index),
             Instruction::Not => self.debug_simple_instruction("not", instruction_index),
 
             Instruction::Add => self.debug_simple_instruction("add", instruction_index),
             Instruction::Subtract => self.debug_simple_instruction("sub", instruction_index),
-            Instruction::Multiply => self.debug_simple_instruction("mul", instruction_index),
-            Instruction::Divide => self.debug_simple_instruction("div", instruction_index),
+            Instruction::Multiply => self.debug_simple_instruction("multiply", instruction_index),
+            Instruction::Divide => self.debug_simple_instruction("divide", instruction_index),
 
-            Instruction::Equal => self.debug_simple_instruction("eq", instruction_index),
-            Instruction::NotEqual => self.debug_simple_instruction("neq", instruction_index),
-            Instruction::Greater => self.debug_simple_instruction("ge", instruction_index),
-            Instruction::GreaterEqual => self.debug_simple_instruction("geq", instruction_index),
-            Instruction::Lesser => self.debug_simple_instruction("le", instruction_index),
-            Instruction::LesserEqual => self.debug_simple_instruction("leq", instruction_index),
+            Instruction::Equal => self.debug_simple_instruction("equal", instruction_index),
+            Instruction::NotEqual => self.debug_simple_instruction("not_equal", instruction_index),
+            Instruction::Greater => self.debug_simple_instruction("greater", instruction_index),
+            Instruction::GreaterEqual => {
+                self.debug_simple_instruction("greater_equal", instruction_index)
+            }
+            Instruction::Lesser => self.debug_simple_instruction("lesser", instruction_index),
+            Instruction::LesserEqual => {
+                self.debug_simple_instruction("lesser_equal", instruction_index)
+            }
 
             Instruction::And => self.debug_simple_instruction("and", instruction_index),
             Instruction::Or => self.debug_simple_instruction("or", instruction_index),
@@ -63,7 +68,7 @@ impl Chunk {
 
     fn debug_simple_instruction(&self, instruction_name: &str, instruction_index: usize) {
         println!(
-            "{:04} {} {}",
+            "{:014} {} {}",
             instruction_index, self.positions[instruction_index].line, instruction_name,
         );
     }
@@ -75,7 +80,7 @@ impl Chunk {
         object: Object,
     ) {
         println!(
-            "{:04} {} {} '{}'",
+            "{:014} {} {} '{}'",
             instruction_index, self.positions[instruction_index].line, instruction_name, object
         );
     }

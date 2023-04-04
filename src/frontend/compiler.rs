@@ -88,7 +88,7 @@ impl Compiler {
             Expression::Assignment(expression) => self.compile_assignment_expression(expression),
             Expression::Binary(expression) => self.compile_binary_expression(expression),
             Expression::Unary(expression) => self.compile_unary_expression(expression),
-            Expression::Group(expression) => self.compile_expression(&*expression.child),
+            Expression::Group(expression) => self.compile_expression(&expression.child),
             Expression::Call(_) => todo!(),
             Expression::Literal(expression) => self.compile_literal_expression(expression),
             Expression::Variable(expression) => self.compile_variable_expression(expression),
@@ -109,7 +109,7 @@ impl Compiler {
                 ),
                 Some(expression.position()),
             ))?;
-        self.compile_expression(&*expression.initializer)?;
+        self.compile_expression(&expression.initializer)?;
         self.bindings.insert(
             expression.identifier.lexeme.clone(),
             *expression.initializer.clone(),
@@ -118,8 +118,8 @@ impl Compiler {
     }
 
     fn compile_binary_expression(&mut self, expression: &BinaryExpression) -> Result<(), Error> {
-        self.compile_expression(&*expression.left)?;
-        self.compile_expression(&*expression.right)?;
+        self.compile_expression(&expression.left)?;
+        self.compile_expression(&expression.right)?;
         match expression.operator.kind {
             TokenKind::Plus => self
                 .chunk
@@ -176,8 +176,12 @@ impl Compiler {
     }
 
     fn compile_unary_expression(&mut self, expression: &UnaryExpression) -> Result<(), Error> {
-        self.compile_expression(&*expression.right)?;
+        self.compile_expression(&expression.right)?;
         match expression.operator.kind {
+            TokenKind::Plus => self
+                .chunk
+                .add_instruction(Instruction::Identify, expression.position()),
+
             TokenKind::Minus => self
                 .chunk
                 .add_instruction(Instruction::Negate, expression.position()),
