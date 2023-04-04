@@ -2,8 +2,8 @@ use crate::common::{
     ast::{
         AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, ElseStatement,
         Expression, ExpressionStatement, FunctionStatement, GroupExpression, IfStatement,
-        LiteralExpression, ReturnStatement, Statement, UnaryExpression, VariableExpression,
-        VariableStatement, WhileStatement,
+        LiteralExpression, PrintStatement, Program, ReturnStatement, Statement, UnaryExpression,
+        VariableExpression, VariableStatement, WhileStatement,
     },
     error::{Error, ErrorKind},
     token::{Token, TokenKind},
@@ -22,7 +22,7 @@ impl Parser {
         }
     }
 
-    pub(crate) fn parse(&mut self) -> Result<Vec<Statement>, Error> {
+    pub(crate) fn parse(&mut self) -> Result<Program, Error> {
         let mut statements = Vec::new();
 
         while self.index_in_bound() && !self.current_token_is_eof() {
@@ -41,6 +41,7 @@ impl Parser {
             TokenKind::OpenBrace => Ok(Statement::Block(self.parse_block_statement()?)),
             TokenKind::Var => Ok(Statement::Variable(self.parse_var_statement()?)),
             TokenKind::Return => Ok(Statement::Return(self.parse_return_statement()?)),
+            TokenKind::Print => Ok(Statement::Print(self.parse_print_statement()?)),
             _ => Ok(Statement::Expression(self.parse_expression_statement()?)),
         }
     }
@@ -96,9 +97,9 @@ impl Parser {
         self.consume_token(TokenKind::For)?;
         let variable_initialization = self.parse_var_statement()?;
         self.consume_token(TokenKind::Comma)?;
-        let condition = self.parse_expression()?;
+        let condition = self.parse_comparison_expression()?;
         self.consume_token(TokenKind::Comma)?;
-        let step_expression = self.parse_expression()?;
+        let step_expression = self.parse_assignment_expression()?;
         let do_block = self.parse_block_statement()?;
         let while_statement = Statement::While(WhileStatement::new(
             condition,
@@ -137,11 +138,8 @@ impl Parser {
     fn parse_var_statement(&mut self) -> Result<VariableStatement, Error> {
         self.consume_token(TokenKind::Var)?;
         let identifier = self.consume_token(TokenKind::Identifier)?;
-        let mut initializer = None;
-        if self.current_token_matches(&[TokenKind::Assign]) {
-            self.consume_token(TokenKind::Assign)?;
-            initializer = Some(self.parse_expression()?);
-        }
+        self.consume_token(TokenKind::Assign)?;
+        let initializer = self.parse_expression()?;
 
         Ok(VariableStatement::new(identifier, initializer))
     }
@@ -150,6 +148,12 @@ impl Parser {
         self.consume_token(TokenKind::Return)?;
         let expression = self.parse_expression()?;
         Ok(ReturnStatement::new(expression))
+    }
+
+    fn parse_print_statement(&mut self) -> Result<PrintStatement, Error> {
+        self.consume_token(TokenKind::Print)?;
+        let expression = self.parse_expression()?;
+        Ok(PrintStatement::new(expression))
     }
 
     fn parse_expression_statement(&mut self) -> Result<ExpressionStatement, Error> {
@@ -175,8 +179,11 @@ impl Parser {
                 )));
             } else {
                 return Err(Error::new(
-                    ErrorKind::ParserError,
-                    "Invalid assignment target".to_string(),
+                    ErrorKind::Parser,
+                    format!(
+                        "Invalid assignment target. Can not assign to '{}'.",
+                        assign_token.lexeme
+                    ),
                     Some(assign_token.position),
                 ));
             }
@@ -239,17 +246,17 @@ impl Parser {
     }
 
     fn parse_additive_expression(&mut self) -> Result<Expression, Error> {
-        let mut left = self.parse_multiplicatiove_expression()?;
+        let mut left = self.parse_multiplicative_expression()?;
         while self.current_token_matches(&[TokenKind::Plus, TokenKind::Minus]) {
             let operator = self.next_token();
-            let right = self.parse_multiplicatiove_expression()?;
+            let right = self.parse_multiplicative_expression()?;
             left = Expression::Binary(BinaryExpression::new(left, operator, right));
         }
 
         Ok(left)
     }
 
-    fn parse_multiplicatiove_expression(&mut self) -> Result<Expression, Error> {
+    fn parse_multiplicative_expression(&mut self) -> Result<Expression, Error> {
         let mut left = self.parse_unary_expression()?;
         while self.current_token_matches(&[TokenKind::Star, TokenKind::Slash]) {
             let operator = self.next_token();
@@ -354,16 +361,16 @@ impl Parser {
             Ok(self.next_token())
         } else {
             Err(self.generate_error(format!(
-                "Unexpected token; expected `{}`, got `{}`",
+                "Unexpected token. Expected '{}', found '{}'.",
                 kind,
-                self.current_token().lexeme,
+                self.current_token().kind,
             )))
         }
     }
 
     fn generate_error(&self, message: String) -> Error {
         Error::new(
-            ErrorKind::ParserError,
+            ErrorKind::Parser,
             message,
             Some(self.current_token().position),
         )

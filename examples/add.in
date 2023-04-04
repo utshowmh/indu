@@ -1,7 +1,0 @@
-var a = 5
-
-fun add(a, b) {
-    return a + b
-}
-
-writeln(add(5, 5))

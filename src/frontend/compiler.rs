@@ -1,12 +1,13 @@
+use std::collections::HashMap;
+
 use crate::{
     backend::{chunk::Chunk, instruction::Instruction},
     common::{
         ast::{
-            AssignmentExpression, BinaryExpression, BlockStatement, CallExpression, Expression,
-            ExpressionStatement, GroupExpression, LiteralExpression, PrintStatement, Program,
-            ReturnStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
+            AssignmentExpression, BinaryExpression, Expression, ExpressionStatement,
+            LiteralExpression, PrintStatement, Program, ReturnStatement, Statement,
+            UnaryExpression, VariableExpression, VariableStatement,
         },
-        binding::Binding,
         error::{Error, ErrorKind},
         object::Object,
         position::Position,
@@ -16,25 +17,24 @@ use crate::{
 
 pub(crate) struct Compiler {
     chunk: Chunk,
-    bindings: Vec<Binding>,
-    scope_index: usize,
+    bindings: HashMap<String, Expression>,
 }
 
 impl Compiler {
     pub(crate) fn new() -> Self {
         Self {
             chunk: Chunk::new(),
-            bindings: Vec::new(),
-            scope_index: 0,
+            bindings: HashMap::new(),
         }
     }
 
-    pub(crate) fn compile(&mut self, program: Program) -> Result<&Chunk, Error> {
+    pub(crate) fn compile(&mut self, program: Program) -> Result<Chunk, Error> {
         for statement in &program {
             self.compile_statement(statement)?;
         }
-
-        Ok(&self.chunk)
+        self.chunk
+            .add_instruction(Instruction::Return, Position::new(0, 0, 0));
+        Ok(self.chunk.clone())
     }
 
     fn compile_statement(&mut self, statement: &Statement) -> Result<(), Error> {
@@ -42,7 +42,7 @@ impl Compiler {
             Statement::Function(_) => todo!(),
             Statement::If(_) => todo!(),
             Statement::While(_) => todo!(),
-            Statement::Block(statement) => self.compile_block_statement(statement),
+            Statement::Block(_) => todo!(),
             Statement::Variable(statement) => self.compile_variable_statement(statement),
             Statement::Return(statement) => self.compile_return_statement(statement),
             Statement::Print(statement) => self.compile_print_statement(statement),
@@ -50,27 +50,37 @@ impl Compiler {
         }
     }
 
-    fn compile_block_statement(&mut self, statement: &BlockStatement) -> Result<(), Error> {
-        todo!()
-    }
-
     fn compile_variable_statement(&mut self, statement: &VariableStatement) -> Result<(), Error> {
-        todo!()
+        self.compile_expression(&statement.initializer)?;
+        self.bindings.insert(
+            statement.identifier.lexeme.clone(),
+            statement.initializer.clone(),
+        );
+        Ok(())
     }
 
-    fn compile_return_statement(&self, statement: &ReturnStatement) -> Result<(), Error> {
-        todo!()
+    fn compile_return_statement(&mut self, statement: &ReturnStatement) -> Result<(), Error> {
+        self.compile_expression(&statement.expression)?;
+        self.chunk
+            .add_instruction(Instruction::Return, statement.expression.position());
+        Ok(())
     }
 
     fn compile_print_statement(&mut self, statement: &PrintStatement) -> Result<(), Error> {
-        todo!()
+        self.compile_expression(&statement.expression)?;
+        self.chunk
+            .add_instruction(Instruction::Print, statement.expression.position());
+        Ok(())
     }
 
     fn compile_expression_statement(
         &mut self,
         statement: &ExpressionStatement,
     ) -> Result<(), Error> {
-        todo!()
+        self.compile_expression(&statement.expression)?;
+        self.chunk
+            .add_instruction(Instruction::Pop, statement.expression.position());
+        Ok(())
     }
 
     fn compile_expression(&mut self, expression: &Expression) -> Result<(), Error> {
@@ -78,8 +88,8 @@ impl Compiler {
             Expression::Assignment(expression) => self.compile_assignment_expression(expression),
             Expression::Binary(expression) => self.compile_binary_expression(expression),
             Expression::Unary(expression) => self.compile_unary_expression(expression),
-            Expression::Group(expression) => self.compile_group_expression(expression),
-            Expression::Call(expression) => self.compile_call_expression(expression),
+            Expression::Group(expression) => self.compile_expression(&*expression.child),
+            Expression::Call(_) => todo!(),
             Expression::Literal(expression) => self.compile_literal_expression(expression),
             Expression::Variable(expression) => self.compile_variable_expression(expression),
         }
@@ -89,53 +99,128 @@ impl Compiler {
         &mut self,
         expression: &AssignmentExpression,
     ) -> Result<(), Error> {
-        todo!()
+        self.bindings
+            .get(&expression.identifier.lexeme)
+            .ok_or(Error::new(
+                ErrorKind::Compiler,
+                format!(
+                    "Undefined identifier. '{}' is not defined.",
+                    expression.identifier.lexeme
+                ),
+                Some(expression.position()),
+            ))?;
+        self.compile_expression(&*expression.initializer)?;
+        self.bindings.insert(
+            expression.identifier.lexeme.clone(),
+            *expression.initializer.clone(),
+        );
+        Ok(())
     }
 
     fn compile_binary_expression(&mut self, expression: &BinaryExpression) -> Result<(), Error> {
-        todo!()
+        self.compile_expression(&*expression.left)?;
+        self.compile_expression(&*expression.right)?;
+        match expression.operator.kind {
+            TokenKind::Plus => self
+                .chunk
+                .add_instruction(Instruction::Add, expression.position()),
+            TokenKind::Minus => self
+                .chunk
+                .add_instruction(Instruction::Subtract, expression.position()),
+            TokenKind::Star => self
+                .chunk
+                .add_instruction(Instruction::Multiply, expression.position()),
+            TokenKind::Slash => self
+                .chunk
+                .add_instruction(Instruction::Divide, expression.position()),
+
+            TokenKind::Equal => self
+                .chunk
+                .add_instruction(Instruction::Equal, expression.position()),
+            TokenKind::NotEqual => self
+                .chunk
+                .add_instruction(Instruction::NotEqual, expression.position()),
+            TokenKind::Greater => self
+                .chunk
+                .add_instruction(Instruction::Greater, expression.position()),
+            TokenKind::GreaterEqual => self
+                .chunk
+                .add_instruction(Instruction::GreaterEqual, expression.position()),
+            TokenKind::Lesser => self
+                .chunk
+                .add_instruction(Instruction::Lesser, expression.position()),
+            TokenKind::LesserEqual => self
+                .chunk
+                .add_instruction(Instruction::LesserEqual, expression.position()),
+
+            TokenKind::And => self
+                .chunk
+                .add_instruction(Instruction::And, expression.position()),
+            TokenKind::Or => self
+                .chunk
+                .add_instruction(Instruction::Or, expression.position()),
+
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::Compiler,
+                    format!(
+                        "Invalid operator. '{}' is not a binary operator.",
+                        expression.operator.lexeme
+                    ),
+                    Some(expression.position()),
+                ))
+            }
+        }
+
+        Ok(())
     }
 
     fn compile_unary_expression(&mut self, expression: &UnaryExpression) -> Result<(), Error> {
-        todo!()
-    }
+        self.compile_expression(&*expression.right)?;
+        match expression.operator.kind {
+            TokenKind::Minus => self
+                .chunk
+                .add_instruction(Instruction::Negate, expression.position()),
 
-    fn compile_call_expression(&mut self, expression: &CallExpression) -> Result<(), Error> {
-        todo!()
-    }
+            TokenKind::Not => self
+                .chunk
+                .add_instruction(Instruction::Not, expression.position()),
+            _ => {
+                return Err(Error::new(
+                    ErrorKind::Compiler,
+                    format!(
+                        "Invalid operator. '{}' is not an unary operator.",
+                        expression.operator.lexeme
+                    ),
+                    Some(expression.position()),
+                ))
+            }
+        }
 
-    fn compile_group_expression(&mut self, expression: &GroupExpression) -> Result<(), Error> {
-        self.compile_expression(&*expression.child)
+        Ok(())
     }
 
     fn compile_literal_expression(&mut self, expression: &LiteralExpression) -> Result<(), Error> {
-        match expression.value.kind {
-            TokenKind::Number => {
-                let object = expression.value.lexeme.parse().unwrap();
-                self.chunk.add_instruction(
-                    Instruction::Push(Object::Number(object)),
-                    expression.position(),
-                );
-            }
-            TokenKind::String => {
-                let object = expression.value.lexeme.parse().unwrap();
-                self.chunk.add_instruction(
-                    Instruction::Push(Object::String(object)),
-                    expression.position(),
-                );
-            }
-            TokenKind::False | TokenKind::True => {
-                let object = expression.value.lexeme.parse().unwrap();
-                self.chunk.add_instruction(
-                    Instruction::Push(Object::Boolean(object)),
-                    expression.position(),
-                );
-            }
-            TokenKind::Nil => {
-                self.chunk
-                    .add_instruction(Instruction::Push(Object::Nil), expression.position());
-            }
-            _ => unreachable!(),
+        if expression.value.kind == TokenKind::Nil {
+            self.chunk
+                .add_instruction(Instruction::Push(Object::Nil), expression.position())
+        } else if expression.value.kind == TokenKind::Number {
+            self.chunk.add_instruction(
+                Instruction::Push(Object::Number(expression.value.lexeme.parse().unwrap())),
+                expression.position(),
+            );
+        } else if expression.value.kind == TokenKind::True
+            || expression.value.kind == TokenKind::False
+        {
+            self.chunk.add_instruction(
+                Instruction::Push(Object::Boolean(expression.value.lexeme.parse().unwrap())),
+                expression.position(),
+            );
+        } else {
+            self.chunk.add_instruction(
+                Instruction::Push(Object::String(expression.value.lexeme.clone())),
+                expression.position(),
+            );
         }
 
         Ok(())
@@ -145,6 +230,19 @@ impl Compiler {
         &mut self,
         expression: &VariableExpression,
     ) -> Result<(), Error> {
-        todo!()
+        let initializer = self
+            .bindings
+            .get(&expression.identifier.lexeme)
+            .ok_or(Error::new(
+                ErrorKind::Compiler,
+                format!(
+                    "Undefined identifier. '{}' is not defined.",
+                    expression.identifier.lexeme
+                ),
+                Some(expression.position()),
+            ))?;
+        self.compile_expression(&initializer.clone())?;
+
+        Ok(())
     }
 }

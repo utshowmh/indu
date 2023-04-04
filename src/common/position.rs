@@ -1,11 +1,12 @@
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Position {
-    pub(crate) column: usize,
+    pub(crate) start: usize,
+    pub(crate) end: usize,
     pub(crate) line: usize,
 }
 
 impl Position {
-    pub(crate) fn new(column: usize, line: usize) -> Self {
-        Self { column, line }
+    pub(crate) fn new(start: usize, end: usize, line: usize) -> Self {
+        Self { start, end, line }
     }
 }

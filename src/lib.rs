@@ -1,26 +1,31 @@
+mod backend;
 mod common;
 mod frontend;
-mod runtime;
 
 use std::{
-    borrow::Borrow,
-    cell::RefCell,
     env::args,
     fs::read_to_string,
     io::{stdin, stdout, Write},
 };
 
+use backend::vm::VirtualMachine;
 use common::error::{Error, ErrorKind};
-use runtime::environment::Environment;
+use frontend::compiler::Compiler;
 
 use crate::{
+    backend::chunk::Chunk,
+    common::ast::Program,
     frontend::{parser::Parser, scanner::Scanner},
-    runtime::interpreter::Interpreter,
 };
 
 const COMMANDS: &str = "\
-#cmd        ->  prints available commands.
-#env        ->  shows environment (variable bindings).
+@cmd                    : prints available commands.
+@exit, @e               : exit from the REPL.
+";
+const USAGE: &str = "\
+Usage:
+indu                        : run the REPL.
+indu [file_path]    : execute given file.
 ";
 
 pub fn start() {
@@ -34,7 +39,7 @@ fn run() -> Result<(), Error> {
         1 => run_repl(),
         2 => run_file(&args[1]),
         _ => {
-            eprintln!("Usage: indu [path_to_source]");
+            eprintln!("{USAGE}");
             Ok(())
         }
     }
@@ -46,73 +51,84 @@ fn run_file(source_path: &str) -> Result<(), Error> {
         let tokens = scanner.scan()?;
 
         let mut parser = Parser::new(tokens);
-        let expression = parser.parse()?;
+        let program = parser.parse()?;
 
-        let mut interpreter = Interpreter::new();
-        interpreter.interpret(expression)
+        let mut compiler = Compiler::new();
+        let chunk = compiler.compile(program)?;
+
+        let mut vm = VirtualMachine::new();
+        vm.interpret(chunk)?;
+
+        Ok(())
     } else {
         Err(Error::new(
-            ErrorKind::SystemError,
-            format!("Could not read file `{source_path}`"),
+            ErrorKind::System,
+            format!("Could not read file from '{source_path}'."),
             None,
         ))
     }
 }
 
 fn run_repl() -> Result<(), Error> {
-    println!("Welcome to Indu REPL. Type  `#cmd` to see available commands.\n");
+    println!("Welcome to Indu REPL.\nType '@cmd' to see available commands.\n");
 
-    let mut environment = RefCell::new(Environment::new());
+    let mut line = String::new();
 
     loop {
-        print!(">>> ");
+        print!("|> ");
         stdout().flush().or(Err(Error::new(
-            ErrorKind::SystemError,
-            "Could not flush stdout".to_string(),
+            ErrorKind::System,
+            "Could not flush 'stdout'.".to_string(),
             None,
         )))?;
-        let mut line = String::new();
         stdin().read_line(&mut line).or(Err(Error::new(
-            ErrorKind::SystemError,
-            "Could not read from stdin".to_string(),
+            ErrorKind::System,
+            "Could not read line from 'stdin'.".to_string(),
             None,
         )))?;
-        let line = line.trim();
 
-        if line.starts_with('#') {
-            match line {
-                "#cmd" => print!("{COMMANDS}"),
-                "#exit" => {
+        if line.starts_with('@') {
+            match line.trim() {
+                "@cmd" => print!("{COMMANDS}"),
+                "@exit" | "@e" => {
                     println!("Exiting Indu REPL.");
                     break;
                 }
-                _ => {
-                    Error::new(ErrorKind::SystemError, "Unknown command".to_string(), None).report()
-                }
+                command => Error::new(
+                    ErrorKind::System,
+                    format!("Invalid command. '{command}' is not a known command."),
+                    None,
+                )
+                .report(),
             }
 
             continue;
         }
 
-        let mut scanner = Scanner::new(line);
+        let mut scanner = Scanner::new(line.trim());
         let tokens = scanner.scan().unwrap_or_else(|error| {
             error.report();
             Vec::new()
         });
 
         let mut parser = Parser::new(tokens);
-        let expression = parser.parse().unwrap_or_else(|error| {
+        let program = parser.parse().unwrap_or_else(|error| {
             error.report();
-            Vec::new()
+            Program::new()
         });
 
-        let mut interpreter = Interpreter::new();
-        interpreter.environments.push(environment);
-        interpreter.interpret(expression).unwrap_or_else(|error| {
+        let mut compiler = Compiler::new();
+        let chunk = compiler.compile(program).unwrap_or_else(|error| {
+            error.report();
+            Chunk::new()
+        });
+
+        let mut vm = VirtualMachine::new();
+        vm.interpret(chunk).unwrap_or_else(|error| {
             error.report();
         });
 
-        environment = interpreter.environments.last().borrow().unwrap().clone();
+        line.clear();
     }
 
     Ok(())

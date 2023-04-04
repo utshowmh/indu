@@ -1,4 +1,6 @@
-use super::{object::Object, position::Position, token::Token};
+use super::{position::Position, token::Token};
+
+pub(crate) type Program = Vec<Statement>;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Statement {
@@ -8,6 +10,7 @@ pub(crate) enum Statement {
     Block(BlockStatement),
     Variable(VariableStatement),
     Return(ReturnStatement),
+    Print(PrintStatement),
     Expression(ExpressionStatement),
 }
 
@@ -84,11 +87,11 @@ impl BlockStatement {
 #[derive(Debug, Clone)]
 pub(crate) struct VariableStatement {
     pub(crate) identifier: Token,
-    pub(crate) initializer: Option<Expression>,
+    pub(crate) initializer: Expression,
 }
 
 impl VariableStatement {
-    pub(crate) fn new(identifier: Token, initializer: Option<Expression>) -> Self {
+    pub(crate) fn new(identifier: Token, initializer: Expression) -> Self {
         Self {
             identifier,
             initializer,
@@ -102,6 +105,17 @@ pub(crate) struct ReturnStatement {
 }
 
 impl ReturnStatement {
+    pub(crate) fn new(expression: Expression) -> Self {
+        Self { expression }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct PrintStatement {
+    pub(crate) expression: Expression,
+}
+
+impl PrintStatement {
     pub(crate) fn new(expression: Expression) -> Self {
         Self { expression }
     }
@@ -147,7 +161,6 @@ impl Expression {
 pub(crate) struct AssignmentExpression {
     pub(crate) identifier: Token,
     pub(crate) initializer: Box<Expression>,
-    position: Position,
 }
 
 impl AssignmentExpression {
@@ -155,12 +168,11 @@ impl AssignmentExpression {
         Self {
             identifier: identifier.clone(),
             initializer: Box::new(initializer),
-            position: identifier.position,
         }
     }
 
-    fn position(&self) -> Position {
-        self.position.clone()
+    pub(crate) fn position(&self) -> Position {
+        self.identifier.position.clone()
     }
 }
 
@@ -180,7 +192,7 @@ impl BinaryExpression {
         }
     }
 
-    fn position(&self) -> Position {
+    pub(crate) fn position(&self) -> Position {
         self.operator.position.clone()
     }
 }
@@ -199,7 +211,7 @@ impl UnaryExpression {
         }
     }
 
-    fn position(&self) -> Position {
+    pub(crate) fn position(&self) -> Position {
         self.operator.position.clone()
     }
 }
@@ -216,7 +228,7 @@ impl GroupExpression {
         }
     }
 
-    fn position(&self) -> Position {
+    pub(crate) fn position(&self) -> Position {
         self.child.position()
     }
 }
@@ -242,20 +254,18 @@ impl CallExpression {
 
 #[derive(Debug, Clone)]
 pub(crate) struct LiteralExpression {
-    pub(crate) value: Option<Object>,
-    position: Position,
+    pub(crate) value: Token,
 }
 
 impl LiteralExpression {
     pub(crate) fn new(value: Token) -> Self {
         Self {
-            value: value.literal,
-            position: value.position,
+            value: value.clone(),
         }
     }
 
-    fn position(&self) -> Position {
-        self.position.clone()
+    pub(crate) fn position(&self) -> Position {
+        self.value.position.clone()
     }
 }
 
@@ -269,7 +279,7 @@ impl VariableExpression {
         Self { identifier }
     }
 
-    fn position(&self) -> Position {
+    pub(crate) fn position(&self) -> Position {
         self.identifier.position.clone()
     }
 }

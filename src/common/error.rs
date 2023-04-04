@@ -1,11 +1,26 @@
+use std::fmt::Display;
+
 use super::position::Position;
 
 #[derive(Debug)]
 pub(crate) enum ErrorKind {
-    SystemError,
-    LexerError,
-    ParserError,
-    RuntimeError,
+    System,
+    Lexer,
+    Parser,
+    Runtime,
+    Compiler,
+}
+
+impl Display for ErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ErrorKind::System => write!(f, "SystemError"),
+            ErrorKind::Lexer => write!(f, "LexerError"),
+            ErrorKind::Parser => write!(f, "ParserError"),
+            ErrorKind::Compiler => write!(f, "CompilerError"),
+            ErrorKind::Runtime => write!(f, "RuntimeError"),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -26,8 +41,11 @@ impl Error {
 
     pub(crate) fn report(&self) {
         if let Some(position) = self.position.clone() {
-            eprintln!("[line {}, column {}]", position.line, position.column,);
+            eprintln!(
+                "[line {}, column {}:{}]",
+                position.line, position.start, position.end
+            );
         }
-        eprintln!("{:?}: {}.", self.kind, self.message,);
+        eprintln!("{}: {}.", self.kind, self.message,);
     }
 }
