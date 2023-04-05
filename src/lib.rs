@@ -15,7 +15,7 @@ use frontend::compiler::Compiler;
 use crate::{
     backend::chunk::Chunk,
     common::ast::Program,
-    frontend::{parser::Parser, scanner::Scanner},
+    frontend::{compiler::SymbolTable, parser::Parser, scanner::Scanner},
 };
 
 const COMMANDS: &str = "\
@@ -65,7 +65,7 @@ fn run_source(source: &str) -> Result<(), Error> {
     let mut parser = Parser::new(tokens);
     let program = parser.parse()?;
 
-    let mut compiler = Compiler::new();
+    let mut compiler = Compiler::new(None);
     let chunk = compiler.compile(program)?;
 
     let mut vm = VirtualMachine::new();
@@ -78,6 +78,7 @@ fn run_repl() -> Result<(), Error> {
     println!("Welcome to Indu REPL.\nType '@cmd' to see available commands.\n");
 
     let mut line = String::new();
+    let mut bindings = vec![SymbolTable::default()];
 
     loop {
         print!("|> ");
@@ -122,7 +123,7 @@ fn run_repl() -> Result<(), Error> {
             Program::new()
         });
 
-        let mut compiler = Compiler::new();
+        let mut compiler = Compiler::new(Some(bindings.clone()));
         let chunk = compiler.compile(program).unwrap_or_else(|error| {
             error.report();
             Chunk::new()
@@ -134,6 +135,7 @@ fn run_repl() -> Result<(), Error> {
         });
 
         line.clear();
+        bindings = compiler.get_bindings();
     }
 
     Ok(())

@@ -15,16 +15,18 @@ use crate::{
     },
 };
 
+pub(crate) type SymbolTable = RefCell<HashMap<String, Expression>>;
+
 pub(crate) struct Compiler {
     chunk: Chunk,
-    bindings: Vec<RefCell<HashMap<String, Expression>>>,
+    bindings: Vec<SymbolTable>,
 }
 
 impl Compiler {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(bindings: Option<Vec<SymbolTable>>) -> Self {
         Self {
             chunk: Chunk::new(),
-            bindings: vec![RefCell::new(HashMap::new())],
+            bindings: bindings.unwrap_or(vec![SymbolTable::default()]),
         }
     }
 
@@ -309,5 +311,9 @@ impl Compiler {
             .add_instruction(Instruction::Continue, statement.condition.position());
         self.chunk
             .edit_instruction(patch_index, Instruction::JumpIfFalse(jump_address));
+    }
+
+    pub(crate) fn get_bindings(&self) -> Vec<SymbolTable> {
+        self.bindings.clone()
     }
 }
