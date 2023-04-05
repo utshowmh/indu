@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
 use crate::{
     backend::{chunk::Chunk, instruction::Instruction},
@@ -11,20 +11,20 @@ use crate::{
         error::{Error, ErrorKind},
         object::Object,
         position::Position,
-        token::TokenKind,
+        token::{Token, TokenKind},
     },
 };
 
 pub(crate) struct Compiler {
     chunk: Chunk,
-    bindings: HashMap<String, Expression>,
+    bindings: Vec<RefCell<HashMap<String, Expression>>>,
 }
 
 impl Compiler {
     pub(crate) fn new() -> Self {
         Self {
             chunk: Chunk::new(),
-            bindings: HashMap::new(),
+            bindings: vec![RefCell::new(HashMap::new())],
         }
     }
 
@@ -75,15 +75,17 @@ impl Compiler {
     }
 
     fn compile_block_statement(&mut self, statement: &BlockStatement) -> Result<(), Error> {
+        self.bindings.push(RefCell::new(HashMap::new()));
         for statement in &statement.statements {
             self.compile_statement(statement)?;
         }
+        self.bindings.pop().unwrap();
         Ok(())
     }
 
     fn compile_variable_statement(&mut self, statement: &VariableStatement) -> Result<(), Error> {
         self.compile_expression(&statement.initializer)?;
-        self.bindings.insert(
+        self.bindings.last().unwrap().borrow_mut().insert(
             statement.identifier.lexeme.clone(),
             statement.initializer.clone(),
         );
@@ -130,18 +132,9 @@ impl Compiler {
         &mut self,
         expression: &AssignmentExpression,
     ) -> Result<(), Error> {
-        self.bindings
-            .get(&expression.identifier.lexeme)
-            .ok_or(Error::new(
-                ErrorKind::Compiler,
-                format!(
-                    "Undefined identifier. '{}' is not defined.",
-                    expression.identifier.lexeme
-                ),
-                Some(expression.position()),
-            ))?;
+        let (i, _) = self.find_binding(expression.identifier.clone())?;
         self.compile_expression(&expression.initializer)?;
-        self.bindings.insert(
+        self.bindings[i].borrow_mut().insert(
             expression.identifier.lexeme.clone(),
             *expression.initializer.clone(),
         );
@@ -288,20 +281,26 @@ impl Compiler {
         &mut self,
         expression: &VariableExpression,
     ) -> Result<(), Error> {
-        let initializer = self
-            .bindings
-            .get(&expression.identifier.lexeme)
-            .ok_or(Error::new(
-                ErrorKind::Compiler,
-                format!(
-                    "Undefined identifier. '{}' is not defined.",
-                    expression.identifier.lexeme
-                ),
-                Some(expression.position()),
-            ))?;
+        let (_, initializer) = self.find_binding(expression.identifier.clone())?;
         self.compile_expression(&initializer.clone())?;
-
         Ok(())
+    }
+
+    fn find_binding(&self, identifier: Token) -> Result<(usize, Expression), Error> {
+        for i in (0..self.bindings.len()).rev() {
+            let bindings = self.bindings[i].borrow();
+            if let Some(expression) = bindings.get(&identifier.lexeme) {
+                return Ok((i, expression.clone()));
+            }
+        }
+        Err(Error::new(
+            ErrorKind::Compiler,
+            format!(
+                "Undefined identifier. '{}' is not defined.",
+                identifier.lexeme
+            ),
+            Some(identifier.position),
+        ))
     }
 
     fn patch_if_statement(&mut self, patch_index: usize, statement: &IfStatement) {
