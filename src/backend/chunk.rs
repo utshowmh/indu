@@ -1,4 +1,6 @@
-use crate::common::{object::Object, position::Position};
+use std::fmt::Display;
+
+use crate::common::position::Position;
 
 use super::instruction::Instruction;
 
@@ -16,9 +18,18 @@ impl Chunk {
         }
     }
 
-    pub(crate) fn add_instruction(&mut self, instruction: Instruction, position: Position) {
+    pub(crate) fn add_instruction(
+        &mut self,
+        instruction: Instruction,
+        position: Position,
+    ) -> usize {
         self.instructions.push(instruction);
         self.positions.push(position);
+        self.instructions.len() - 1
+    }
+
+    pub(crate) fn edit_instruction(&mut self, instruction_index: usize, instruction: Instruction) {
+        self.instructions[instruction_index] = instruction;
     }
 
     pub(crate) fn get_instruction(&self, instruction_index: usize) -> Instruction {
@@ -37,7 +48,7 @@ impl Chunk {
             Instruction::Print => self.debug_simple_instruction("print", instruction_index),
 
             Instruction::Push(object) => {
-                self.debug_constant_instruction("push", instruction_index, object);
+                self.debug_complex_instruction("push", instruction_index, object);
             }
             Instruction::Pop => self.debug_simple_instruction("pop", instruction_index),
 
@@ -63,6 +74,12 @@ impl Chunk {
 
             Instruction::And => self.debug_simple_instruction("and", instruction_index),
             Instruction::Or => self.debug_simple_instruction("or", instruction_index),
+
+            Instruction::JumpIfFalse(ip) => {
+                self.debug_complex_instruction("jump_if_false", instruction_index, ip)
+            }
+
+            Instruction::Continue => self.debug_simple_instruction("continue", instruction_index),
         };
     }
 
@@ -73,15 +90,17 @@ impl Chunk {
         );
     }
 
-    fn debug_constant_instruction(
+    fn debug_complex_instruction<T>(
         &self,
         instruction_name: &str,
         instruction_index: usize,
-        object: Object,
-    ) {
+        operand: T,
+    ) where
+        T: Display,
+    {
         println!(
             "{:014} {} {} '{}'",
-            instruction_index, self.positions[instruction_index].line, instruction_name, object
+            instruction_index, self.positions[instruction_index].line, instruction_name, operand
         );
     }
 

@@ -1,0 +1,9 @@
+var a = 100
+
+if a > 100 {
+    print "a is grater than 100."
+} else if a < 100 {
+    print "a is lesser than 100."
+} else {
+    print "a is equal to 100."
+}

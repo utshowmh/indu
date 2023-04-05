@@ -257,6 +257,15 @@ impl VirtualMachine {
                     self.stack
                         .push(Object::Boolean(a.is_truthy() || b.is_truthy()))
                 }
+
+                Instruction::JumpIfFalse(ip) => {
+                    let a = self.stack.pop().unwrap();
+                    if !a.is_truthy() {
+                        self.ip = ip;
+                    }
+                }
+
+                Instruction::Continue => {}
             }
         }
 

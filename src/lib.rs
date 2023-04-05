@@ -47,7 +47,7 @@ fn run() -> Result<(), Error> {
 
 fn run_file(source_path: &str) -> Result<(), Error> {
     if let Ok(source) = read_to_string(source_path) {
-        run_source(&source).unwrap_or_else(|error| error.report_in_source(&source));
+        run_source(&source).unwrap_or_else(|error| error.report());
         Ok(())
     } else {
         Err(Error::new(
@@ -112,25 +112,25 @@ fn run_repl() -> Result<(), Error> {
 
         let mut scanner = Scanner::new(line.trim());
         let tokens = scanner.scan().unwrap_or_else(|error| {
-            error.report_in_source(&line);
+            error.report();
             Vec::new()
         });
 
         let mut parser = Parser::new(tokens);
         let program = parser.parse().unwrap_or_else(|error| {
-            error.report_in_source(&line);
+            error.report();
             Program::new()
         });
 
         let mut compiler = Compiler::new();
         let chunk = compiler.compile(program).unwrap_or_else(|error| {
-            error.report_in_source(&line);
+            error.report();
             Chunk::new()
         });
 
         let mut vm = VirtualMachine::new();
         vm.interpret(chunk).unwrap_or_else(|error| {
-            error.report_in_source(&line);
+            error.report();
         });
 
         line.clear();

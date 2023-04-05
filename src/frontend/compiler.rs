@@ -4,9 +4,9 @@ use crate::{
     backend::{chunk::Chunk, instruction::Instruction},
     common::{
         ast::{
-            AssignmentExpression, BinaryExpression, Expression, ExpressionStatement,
-            LiteralExpression, PrintStatement, Program, ReturnStatement, Statement,
-            UnaryExpression, VariableExpression, VariableStatement,
+            AssignmentExpression, BinaryExpression, BlockStatement, ElseStatement, Expression,
+            ExpressionStatement, IfStatement, LiteralExpression, PrintStatement, Program,
+            ReturnStatement, Statement, UnaryExpression, VariableExpression, VariableStatement,
         },
         error::{Error, ErrorKind},
         object::Object,
@@ -40,14 +40,45 @@ impl Compiler {
     fn compile_statement(&mut self, statement: &Statement) -> Result<(), Error> {
         match statement {
             Statement::Function(_) => todo!(),
-            Statement::If(_) => todo!(),
+            Statement::If(statement) => self.compile_if_statement(statement),
             Statement::While(_) => todo!(),
-            Statement::Block(_) => todo!(),
+            Statement::Block(statement) => self.compile_block_statement(statement),
             Statement::Variable(statement) => self.compile_variable_statement(statement),
             Statement::Return(statement) => self.compile_return_statement(statement),
             Statement::Print(statement) => self.compile_print_statement(statement),
             Statement::Expression(statement) => self.compile_expression_statement(statement),
         }
+    }
+
+    fn compile_if_statement(&mut self, statement: &IfStatement) -> Result<(), Error> {
+        self.compile_expression(&statement.condition)?;
+        let patch_index = self.chunk.add_instruction(
+            Instruction::JumpIfFalse(usize::MAX),
+            statement.condition.position(),
+        );
+        self.compile_block_statement(&statement.then_branch)?;
+        if let Some(else_statement) = &*statement.else_branch {
+            match else_statement {
+                ElseStatement::If(if_statement) => {
+                    self.patch_if_statement(patch_index, statement);
+                    self.compile_if_statement(if_statement)?;
+                }
+                ElseStatement::Block(block) => {
+                    self.patch_if_statement(patch_index, statement);
+                    self.compile_block_statement(block)?;
+                }
+            }
+        } else {
+            self.patch_if_statement(patch_index, statement);
+        }
+        Ok(())
+    }
+
+    fn compile_block_statement(&mut self, statement: &BlockStatement) -> Result<(), Error> {
+        for statement in &statement.statements {
+            self.compile_statement(statement)?;
+        }
+        Ok(())
     }
 
     fn compile_variable_statement(&mut self, statement: &VariableStatement) -> Result<(), Error> {
@@ -121,93 +152,116 @@ impl Compiler {
         self.compile_expression(&expression.left)?;
         self.compile_expression(&expression.right)?;
         match expression.operator.kind {
-            TokenKind::Plus => self
-                .chunk
-                .add_instruction(Instruction::Add, expression.position()),
-            TokenKind::Minus => self
-                .chunk
-                .add_instruction(Instruction::Subtract, expression.position()),
-            TokenKind::Star => self
-                .chunk
-                .add_instruction(Instruction::Multiply, expression.position()),
-            TokenKind::Slash => self
-                .chunk
-                .add_instruction(Instruction::Divide, expression.position()),
-
-            TokenKind::Equal => self
-                .chunk
-                .add_instruction(Instruction::Equal, expression.position()),
-            TokenKind::NotEqual => self
-                .chunk
-                .add_instruction(Instruction::NotEqual, expression.position()),
-            TokenKind::Greater => self
-                .chunk
-                .add_instruction(Instruction::Greater, expression.position()),
-            TokenKind::GreaterEqual => self
-                .chunk
-                .add_instruction(Instruction::GreaterEqual, expression.position()),
-            TokenKind::Lesser => self
-                .chunk
-                .add_instruction(Instruction::Lesser, expression.position()),
-            TokenKind::LesserEqual => self
-                .chunk
-                .add_instruction(Instruction::LesserEqual, expression.position()),
-
-            TokenKind::And => self
-                .chunk
-                .add_instruction(Instruction::And, expression.position()),
-            TokenKind::Or => self
-                .chunk
-                .add_instruction(Instruction::Or, expression.position()),
-
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::Compiler,
-                    format!(
-                        "Invalid operator. '{}' is not a binary operator.",
-                        expression.operator.lexeme
-                    ),
-                    Some(expression.position()),
-                ))
+            TokenKind::Plus => {
+                self.chunk
+                    .add_instruction(Instruction::Add, expression.position());
+                Ok(())
             }
-        }
+            TokenKind::Minus => {
+                self.chunk
+                    .add_instruction(Instruction::Subtract, expression.position());
+                Ok(())
+            }
+            TokenKind::Star => {
+                self.chunk
+                    .add_instruction(Instruction::Multiply, expression.position());
+                Ok(())
+            }
+            TokenKind::Slash => {
+                self.chunk
+                    .add_instruction(Instruction::Divide, expression.position());
+                Ok(())
+            }
 
-        Ok(())
+            TokenKind::Equal => {
+                self.chunk
+                    .add_instruction(Instruction::Equal, expression.position());
+                Ok(())
+            }
+            TokenKind::NotEqual => {
+                self.chunk
+                    .add_instruction(Instruction::NotEqual, expression.position());
+                Ok(())
+            }
+            TokenKind::Greater => {
+                self.chunk
+                    .add_instruction(Instruction::Greater, expression.position());
+                Ok(())
+            }
+            TokenKind::GreaterEqual => {
+                self.chunk
+                    .add_instruction(Instruction::GreaterEqual, expression.position());
+                Ok(())
+            }
+            TokenKind::Lesser => {
+                self.chunk
+                    .add_instruction(Instruction::Lesser, expression.position());
+                Ok(())
+            }
+            TokenKind::LesserEqual => {
+                self.chunk
+                    .add_instruction(Instruction::LesserEqual, expression.position());
+                Ok(())
+            }
+
+            TokenKind::And => {
+                self.chunk
+                    .add_instruction(Instruction::And, expression.position());
+                Ok(())
+            }
+            TokenKind::Or => {
+                self.chunk
+                    .add_instruction(Instruction::Or, expression.position());
+                Ok(())
+            }
+
+            _ => Err(Error::new(
+                ErrorKind::Compiler,
+                format!(
+                    "Invalid operator. '{}' is not a binary operator.",
+                    expression.operator.lexeme
+                ),
+                Some(expression.position()),
+            )),
+        }
     }
 
     fn compile_unary_expression(&mut self, expression: &UnaryExpression) -> Result<(), Error> {
         self.compile_expression(&expression.right)?;
         match expression.operator.kind {
-            TokenKind::Plus => self
-                .chunk
-                .add_instruction(Instruction::Identify, expression.position()),
-
-            TokenKind::Minus => self
-                .chunk
-                .add_instruction(Instruction::Negate, expression.position()),
-
-            TokenKind::Not => self
-                .chunk
-                .add_instruction(Instruction::Not, expression.position()),
-            _ => {
-                return Err(Error::new(
-                    ErrorKind::Compiler,
-                    format!(
-                        "Invalid operator. '{}' is not an unary operator.",
-                        expression.operator.lexeme
-                    ),
-                    Some(expression.position()),
-                ))
+            TokenKind::Plus => {
+                self.chunk
+                    .add_instruction(Instruction::Identify, expression.position());
+                Ok(())
             }
-        }
 
-        Ok(())
+            TokenKind::Minus => {
+                self.chunk
+                    .add_instruction(Instruction::Negate, expression.position());
+                Ok(())
+            }
+
+            TokenKind::Not => {
+                self.chunk
+                    .add_instruction(Instruction::Not, expression.position());
+                Ok(())
+            }
+
+            _ => Err(Error::new(
+                ErrorKind::Compiler,
+                format!(
+                    "Invalid operator. '{}' is not an unary operator.",
+                    expression.operator.lexeme
+                ),
+                Some(expression.position()),
+            )),
+        }
     }
 
     fn compile_literal_expression(&mut self, expression: &LiteralExpression) -> Result<(), Error> {
         if expression.value.kind == TokenKind::Nil {
             self.chunk
-                .add_instruction(Instruction::Push(Object::Nil), expression.position())
+                .add_instruction(Instruction::Push(Object::Nil), expression.position());
         } else if expression.value.kind == TokenKind::Number {
             self.chunk.add_instruction(
                 Instruction::Push(Object::Number(expression.value.lexeme.parse().unwrap())),
@@ -248,5 +302,13 @@ impl Compiler {
         self.compile_expression(&initializer.clone())?;
 
         Ok(())
+    }
+
+    fn patch_if_statement(&mut self, patch_index: usize, statement: &IfStatement) {
+        let jump_address = self
+            .chunk
+            .add_instruction(Instruction::Continue, statement.condition.position());
+        self.chunk
+            .edit_instruction(patch_index, Instruction::JumpIfFalse(jump_address));
     }
 }

@@ -26,4 +26,8 @@ pub(crate) enum Instruction {
 
     And,
     Or,
+
+    JumpIfFalse(usize),
+
+    Continue,
 }
